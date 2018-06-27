@@ -53,9 +53,6 @@ class Kind(enum.Enum):
             # TODO: catch this exception and issue a warning
             raise NotImplementedError("kind=%s not supported"%attr) from e
 
-def _parent(node):
-    """Get the parent of a node or None if it has no parent."""
-    return next(node.iterancestors(), None)
 
 def _ez_iterparse(filename, events=()):
     """Wrapper around ElementTree.iterparse() that clears away elements after
@@ -74,9 +71,10 @@ def _ez_iterparse(filename, events=()):
             yield event, elem
 
         if event == "end":
-            parent_node = _parent(elem)
-            if parent_node is not None:
-                parent_node.remove(elem)
+            # see https://lxml.de/parsing.html#modifying-the-tree
+            elem.clear()
+            if elem.getprevious() is not None:
+                elem.getparent()[0]
 
 
 class DoxyFormatError(Exception):
@@ -90,7 +88,7 @@ class DoxyFormatError(Exception):
 #   refids are a sort of namespaced identifier. (:) separates components.
 #   We will split it into an (optional) prefix, and an id, where the id cannot
 #   contain ":"
-_refid_re = re.compile(r"(?:(\w+)_1)?((?:(?:[A-Za-z0-9]+)|(?:_[^1]))+)")
+_refid_re = re.compile(r"(?:((?:\w|-)+)_1)?((?:(?:[A-Za-z0-9-]+)|(?:_[^1]))+)")
 
 def _split_refid(s):
     """Convert a string refid into a tuple of (prefix, id)
@@ -105,7 +103,6 @@ def _split_refid(s):
 
 
 def _join_refid(prefix, id_):
-    # FIXME: do not place _1 if prefix is empty
     return "{}_1{}".format(prefix, id_) if prefix else id_
 
 
@@ -132,8 +129,8 @@ class DoxyDB:
 
     Each element in Doxygen is uniquely defined by a "refid", consisting of a
     string of the form string_part_1id_part.
-
     """
+    # TODO: Finish writing docstring
 
     _supported_compoundfiles = [Kind.from_attr(k) for k in
                 ("class", "struct", "union", "exception", "file", "namespace",
@@ -173,6 +170,7 @@ class DoxyDB:
                                    name TEXT NOT NULL,
                                    kind INTEGER NOT NULL,
                                    PRIMARY KEY (prefix, id)
+                                ON CONFLICT IGNORE
                               );
         CREATE TABLE hierarchy (prefix TEXT NOT NULL, id TEXT NOT NULL,
                                    p_prefix TEXT NOT NULL, p_id TEXT NOT NULL,
@@ -189,12 +187,12 @@ class DoxyDB:
 
             if event == "end":
                 if elem.tag == "name":
-                    _parent(elem).attrib["name"] = elem.text
+                    elem.getparent().attrib["name"] = elem.text
                     continue
                 elif elem.tag == "compound":
                     p_prefix, p_id = None, None
                 elif elem.tag == "member":
-                    p_prefix, p_id = _split_refid(_parent(elem).attrib["refid"])
+                    p_prefix, p_id = _split_refid(elem.getparent().attrib["refid"])
                 else:
                     raise DoxyFormatError("Unknown tag in index: %s"
                                           %elem.tag)
@@ -207,9 +205,14 @@ class DoxyDB:
                     raise DoxyFormatError("Element definition without a name: %s"
                                           %elem.attrib["refid"])
 
-                self._db_conn.execute("INSERT INTO elements values "
-                                     "(?, ?, ?, ?)",
-                                     (prefix, id_, name, kind))
+                try:
+                    self._db_conn.execute("INSERT INTO elements values "
+                                        "(?, ?, ?, ?)",
+                                        (prefix, id_, name, kind))
+                except sqlite3.IntegrityError:
+                    print(prefix, id_, name, kind)
+                    raise
+
 
                 if p_prefix is not None:
                     self._db_conn.execute("INSERT INTO hierarchy values (?, ?, ?, ?)",
@@ -253,3 +256,17 @@ class DoxyDB:
                 self._db_conn.execute("INSERT INTO hierarchy values (?, ?, ?, ?)",
                                          (prefix, id_, p_prefix, p_id))
 
+    # TODO: this may need caching???
+    def find_parents(self, prefix, id_):
+        """Get the refid of the compounds where the given element is defined."""
+        _in = self._supported_compoundfiles
+        cur = self._db_conn.execute(
+        """SELECT p_prefix, p_id
+        FROM hierarchy INNER JOIN elements
+            ON hierarchy.p_prefix = elements.prefix AND hierarchy.p_id = elements.id
+        WHERE hierarchy.prefix = ?
+              AND hierarchy.id = ?
+              AND kind in (%s)"""%",".join(["?"]*len(_in)),
+              [prefix, id_] + _in)
+
+        return [tuple(r) for r in cur]
