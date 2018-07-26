@@ -21,6 +21,10 @@ compounds, and on their own (structs, for example). This means that if Doxygen
 XML files are directly mapped to rst documents, one ends up with loads of
 duplicate definitions.
 
+Also, Doxygen seems to make a lot of decisions in what it considers to be a
+top-level object and what not (of course, it's heavily influenced by C++
+concepts).
+
 C does not have the concept of packages/modules, it's up to the programmer that
 is commenting the code to define those abstraction by using ``@ingroup``
 directives. Some package documentation ends up in file compounds and some other
@@ -32,7 +36,22 @@ How it works
 ============
 
 The tool parses Doxygen XML output. The first document it be read is ``index.xml``.
-Then the rest of the documents are read only do determine hierarchy relationships.
+Then the rest of the documents are read only to determine hierarchy relationships.
+
+References
+----------
+
+Due to the lack of namespaces in C, referring to an entity by name only in any
+big enough project is probably to be ambiguous.
+
+The standard way to refer to entities in antidox is by `file_path::entinty_name``,
+where ``file_path`` is base name of the file, along with enough directory
+components to make the path unique (similar to the default setting in Doxgen).
+
+Templating
+----------
+
+TODO: write about jinja
 
 TODO
 ====
