@@ -14,7 +14,7 @@ def load_doxydb(app):
     cfgdir = app.config.doxygen_xml_dir
 
     try:
-        setup.DOXY_DB = doxy.DoxyDB(app.config.doxygen_xml_dir)
+        setup.doxy_db = doxy.DoxyDB(app.config.doxygen_xml_dir)
     except IOError as e:
         raise ExtensionError("[antidox]: cannot open Doxygen XML DB at %s"
                              %cfgdir) from e

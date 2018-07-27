@@ -17,6 +17,7 @@ import sqlite3
 from collections import namedtuple
 import itertools
 import pathlib
+import functools
 
 from lxml import etree as ET
 
@@ -142,23 +143,45 @@ class AmbiguousTarget(RefError):
 #   contain ":"
 _refid_re = re.compile(r"(?:((?:\w|-)+)_1)?((?:(?:[A-Za-z0-9-]+)|(?:_[^1]))+)")
 
-RefId = namedtuple("RefId", "prefix id_")
+_RefId = namedtuple("_RefId", "prefix id_")
 
-def _split_refid(s):
-    """Convert a string refid into a tuple of (prefix, id)
+class RefId(_RefId):
+    """Reverse engineered Doxygen refid.
+
+    refids are a sort of namespaced identifier. (:) separates components.
+    We will split it into an (optional) prefix, and an id, where the id cannot
+    contain ":"
+
+    "_" is a escape character. A literal "_" is represented by "__". "_1" is
+    the separator we are looking for, and represents ":".
+
+    This object can be constructed in two ways:
+
+    * From a string.
+    * From separate prefix and id_ components.
     """
-    match = _refid_re.fullmatch(s)
-    if not match:
-        raise DoxyFormatError("Cannot parse refid: %s"%s)
 
-    p, h = match.groups()
+    def __new__(cls, *args, **kwargs):
+        if len(args) == 1 and not kwargs:
+            s = args[0]
 
-    return RefId(p or "", h)
+            if isinstance(s, cls):
+                return s
 
+            match = _refid_re.fullmatch(s)
+            if not match:
+                raise DoxyFormatError("Cannot parse refid: %s"%s)
 
-def _join_refid(refid):
-    prefix, id_ = refid
-    return "{}_1{}".format(prefix, id_) if prefix else id_
+            p, h = match.groups()
+
+            return super().__new__(cls, p or "", h)
+        else:
+            return super().__new__(cls, *args, **kwargs)
+
+    def __str__(self):
+        prefix, id_ = self
+        return "{}_1{}".format(prefix, id_) if prefix else id_
+
 
 # String of the form  [[<dir>/]*<file>::][ns::]name
 #                     <--- File path -> <---name-->
@@ -185,10 +208,16 @@ class Target(_Target):
     * From a string.
     * From separate path and name components. Additionally, the name component
       may be either a string or an iterable yielding name sub-components.
+
+    A file entity is represented as <path>::* (i.e., the name filed is *).
     """
     def __new__(cls, *args):
         # FIXME: this does not match namedtuple's __new__ signature
+
         if len(args) == 1:
+            if isinstance(args[0], cls):
+                return args[0]
+
             match = _target_re.fullmatch(args[0])
             if not match:
                 raise ValueError("Malformed target string: %s"%args[0])
@@ -228,6 +257,26 @@ def _match_path(p1, p2):
 def _barename(n):
     """Strip the namespace part of a name."""
     return n.split('::')[-1]
+
+
+def _refid_str(f):
+    """Decorator to make a function that accepts a refid also accept the string"""
+
+    @functools.wraps(f)
+    def _f(self, refid, *args, **kwargs):
+        return f(self, RefId(refid), *args, **kwargs)
+
+    return _f
+
+def _target_str(f):
+    """Decorator to make a function that accepts a target also accept the string"""
+
+    @functools.wraps(f)
+    def _f(self, target, *args, **kwargs):
+        return f(self, Target(target), *args, **kwargs)
+
+    return _f
+
 
 class DoxyDB:
     """
@@ -327,12 +376,12 @@ class DoxyDB:
                 elif elem.tag == "compound":
                     p_refid = None
                 elif elem.tag == "member":
-                    p_refid = _split_refid(elem.getparent().attrib["refid"])
+                    p_refid = RefId(elem.getparent().attrib["refid"])
                 else:
                     raise DoxyFormatError("Unknown tag in index: %s"
                                           %elem.tag)
 
-                this_refid = _split_refid(elem.attrib["refid"])
+                this_refid = RefId(elem.attrib["refid"])
                 kind = Kind.from_attr(elem.attrib["kind"])
                 try:
                     name = elem.attrib["name"]
@@ -362,7 +411,7 @@ class DoxyDB:
                         )
 
         for refid in cur:
-            fn = os.path.join(self._xml_dir, "{}.xml".format(_join_refid(refid)))
+            fn = os.path.join(self._xml_dir, "{}.xml".format(RefId(*refid)))
             self._read_inner(fn)
 
 
@@ -376,7 +425,7 @@ class DoxyDB:
                 continue
 
             if elem.tag == "compounddef":
-                p_refid = _split_refid(elem.attrib["id"])
+                p_refid = RefId(elem.attrib["id"])
             else:
                 s, inner, innerkind = elem.tag.partition("inner")
                 if s: # the tag does not start with "inner"
@@ -385,13 +434,14 @@ class DoxyDB:
                 if not Kind.tag_supported(innerkind):
                     continue
 
-                this_refid = _split_refid(elem.attrib["refid"])
+                this_refid = RefId(elem.attrib["refid"])
 
                 self._db_conn.execute("INSERT INTO hierarchy values (?, ?, ?, ?)",
                                       this_refid + p_refid)
 
 
     # TODO: this may need caching???
+    @_refid_str
     def find_parents(self, refid):
         """Get the refid of the compounds where the given element is defined."""
         cur = self._db_conn.execute(
@@ -404,7 +454,7 @@ class DoxyDB:
 
         return (RefId(*r) for r in cur)
 
-
+    @_refid_str
     def find_children(self, refid):
         """Get the refid of members and compounds that are a direct descendants
         of this element.
@@ -412,6 +462,7 @@ class DoxyDB:
         Returns an iterable (members, compounds), where each element is an
         iterable yielding the refid for child compounds and members.
         """
+
         cur = self._db_conn.execute(
         """SELECT hierarchy.prefix, hierarchy.id, kind IN compound_kinds
         FROM hierarchy INNER JOIN elements
@@ -428,6 +479,7 @@ class DoxyDB:
 
         return r
 
+    @_refid_str
     def refid_to_target(self, refid):
         """Generate a target tuple uniquely identifying a refid.
 
@@ -438,7 +490,6 @@ class DoxyDB:
         # a tree, where the files are roots.
         # The query below traverses the tree until it reaches a file and returns
         # the nodes.
-
         cur = self._db_conn.execute(
         """WITH RECURSIVE
             parent (prefix, id) AS (
@@ -470,11 +521,27 @@ class DoxyDB:
             raise ConsistencyError("Root node is not a file")
 
         if len(nodes) == 1:
-            return Target(None, nodes[0]['name'])
+            return Target(nodes[0]['name'], '*')
         else:
             return Target(nodes[-1]['name'],
                           (n['name'] for n in reversed(nodes[:-1])))
 
+    @_refid_str
+    def kindof(self, refid):
+        """Get the Kind for of an element"""
+        cur = self._db_conn.execute(
+            """SELECT kind FROM elements WHERE prefix = ? AND id = ?""",
+            refid)
+
+        # No need to check for more than one result, prefix and id are primary keys
+        try:
+            result = list(cur)[0]
+        except IndexError as e:
+            raise RefError("No such refid: %s"%str(refid))
+
+        return result['kind']
+
+    @_target_str
     def resolve_target(self, target):
         """Convert a target string into a refid.
 
@@ -489,16 +556,18 @@ class DoxyDB:
         must be specified. This only happens with structs/unions defined inside
         other struct/unions.
         """
+        target = Target(target)
+
         components = tuple(target.name_components)
         ncompo = len(components)
 
         # Accept matches at level zero if the target refers to a file.
-        if ncompo == 1 and not target.path:
+        if ncompo == 1 and target.name == '*':
             accept_level = 0
-            path_filter = target.name
         else:
             accept_level = ncompo
-            path_filter = target.path
+
+        path_filter = target.path
 
         # The call to barename is a kind of hack. It is necessary because
         # doxygen stores some names with namespaces and some without.
@@ -536,6 +605,32 @@ class DoxyDB:
             raise AmbiguousTarget("Target (%s) resolves to more than one element"%str(target))
 
         return r[0]
+
+    @_refid_str
+    def get_tree(self, refid):
+        """Get the xml element tree for an element"""
+
+        refkind = self.kindof(refid)
+        if refkind in Kind.compounds():
+            # compounds are defined in their own file.
+            definition_file_base = refid
+            xpathq = '//compounddef[@id=$id]'
+        else:
+            # Doxygen defines the same member in more than one place.
+            # It is wasteful, though it makes our life easier.
+            try:
+                definition_file_base = next(self.find_parents(refid))
+            except StopIteration as e:
+                raise ConsistencyError("Cannot find compound containing %s"%refid) from e
+
+            xpathq = '//memberdef[@id=$id]'
+
+        # TODO: should we cache this?
+        fn = os.path.join(self._xml_dir, "{}.xml".format(definition_file_base))
+        with open(fn) as f:
+            compound_doc = ET.parse(f)
+
+        return compound_doc.xpath(xpathq, id=str(refid))[0]
 
     # TODO: hierarchy walker (sort of os.walkdir with compounds as dirs and members
     #       as files???????)
