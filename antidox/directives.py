@@ -8,6 +8,9 @@
 
 """
 
+import os
+from pkgutil import get_data
+
 from lxml import etree as ET
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
@@ -17,50 +20,46 @@ from sphinx import addnodes
 from . import doxy
 from .__init__ import get_db
 
-def _parse_refs(xmlnode):
-    """Parse a xml node, identify references and write the result as RST nodes.
 
-    The references are done with c domain roles.
-    """
-    # FIXME: this only handles references, but there is more (ulink, etc)
-    #        see <xsd:group name="docTitleCmdGroup"> in compound.xsd
-    result = []
+function_xslt = ET.XSLT(ET.XML(get_data(__package__,
+                                          os.path.join("templates", "function.xsl"))))
 
-    for action, elem in ET.iterwalk(xmlnode, events=("start", "end")):
-        if action == "start" and elem.tag != 'ref':
-            result.append(nodes.Text(elem.text, elem.text))
-        elif action == "end" and elem.tag == 'ref':
-            result.append(addnodes.pending_xref(
-                    c.text, refdomain='doxy', reftype='refid',
-                    reftarget=elem.attrib["refid"]))
+def _get_node(tag):
+    try:
+        return getattr(addnodes, tag)
+    except AttributeError:
+        return getattr(nodes, tag)
 
-            result.append(nodes.Text(elem.tail, elem.tail))
+def _etree_to_sphinx(e):
+    """Convert an element tree to sphinx nodes."""
+
+    curr_element = []
+
+    print(str(e))
+
+    for action, elem in ET.iterwalk(e, events=("start", "end")):
+        if action == "start":
+            nclass = _get_node(elem.tag)
+            print(nclass)
+
+            arg = elem.text if isinstance(nclass, nodes.Text) else ''
+
+            node = nclass(arg, **elem.attrib)
+            if not isinstance(nclass, nodes.Text) and elem.text:
+                node += nodes.Text(elem.text, elem.text)
+
+            curr_element.append(node)
+            curr_element = node
+        else:
+            if curr_element.parent is not None:
+                curr_element = curr_element.parent
+
+            if elem.tail:
+                curr_element.append(nodes.Text(elem.tail, elem.tail))
 
 
-    return result
+    return curr_element
 
-def _function_signature(tree, node):
-    """Parse a doxy element tree into RST nodes representing a function signature."""
-    # TODO: parse the references
-    node += addnodes.desc_type('','')
-    node[-1].extend(_parse_refs(tree.find("type")))
-
-    dname = " "+tree.find("name").text
-    node += addnodes.desc_name(dname, dname)
-
-    paramlist = addnodes.desc_parameterlist()
-    params = tree.findall("param")
-
-    for p in params:
-        param = addnodes.desc_parameter('', '', noemph=True)
-
-        param.extend(_parse_refs(p.find("type")))
-        pname = " " + p.find("declname").text
-        param += nodes.emphasis(pname, pname)
-
-        paramlist += param
-
-    node += paramlist
 
 def _macro_signature(tree, node):
     """Parse a doxy element tree into RST nodes representing a macro signature."""
@@ -108,21 +107,38 @@ class CAuto(Directive):
         """
         return  # do nothing by default
 
+    @property
+    def env(self):
+        return self.state.document.settings.env
+
     def run(self):
         target = self.arguments[0]
-        db = get_db(self.state.document.settings.env)
+        db = get_db(self.env)
         ref = db.resolve_target(target)
+        sref = str(ref)
 
         node = addnodes.desc()
         node['domain'] = 'c'
         node['objtype'] = node['desctype'] = db.guess_desctype(ref)
         node['noindex'] = noindex = ('noindex' in self.options)
+        # TODO: support noindex
 
         element_tree = db.get_tree(ref)
 
-        _function_signature(element_tree, node)
+        et2 = function_xslt(element_tree)
+        node = _etree_to_sphinx(et2)
+        #_function_signature(element_tree, node)
 
-        return [addnodes.index(entries=[("single", target, str(ref), '', None)]), node]
+        self.state.document.note_explicit_target(node)
+        inv = self.env.domaindata['c']['objects']
+        if sref in inv:
+            self.state_machine.reporter.warning(
+                'duplicate C object description of %s, ' % sref +
+                'other instance in ' + self.env.doc2path(inv[sref][0]),
+                line=self.lineno) # FIXME
+        inv[sref] = (self.env.docname, node['objtype'])
+
+        return [addnodes.index(entries=[("single", target, sref, '', None)]), node]
 
 
 class DoxyCDomain(Domain):
