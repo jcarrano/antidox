@@ -8,44 +8,92 @@
 
 """
 
-from . import doxy
+from lxml import etree as ET
+from docutils import nodes
+from docutils.parsers.rst import Directive, directives
+from sphinx.domains import Domain
+from sphinx import addnodes
 
-class CMacro(ObjectDescription):
-    """Document a C macro/define.
+from . import doxy
+from .__init__ import get_db
+
+def _parse_refs(xmlnode):
+    """Parse a xml node, identify references and write the result as RST nodes.
+
+    The references are done with c domain roles.
+    """
+    # FIXME: this only handles references, but there is more (ulink, etc)
+    #        see <xsd:group name="docTitleCmdGroup"> in compound.xsd
+    result = []
+
+    for action, elem in ET.iterwalk(xmlnode, events=("start", "end")):
+        if action == "start" and elem.tag != 'ref':
+            result.append(nodes.Text(elem.text, elem.text))
+        elif action == "end" and elem.tag == 'ref':
+            result.append(addnodes.pending_xref(
+                    c.text, refdomain='doxy', reftype='refid',
+                    reftarget=elem.attrib["refid"]))
+
+            result.append(nodes.Text(elem.tail, elem.tail))
+
+
+    return result
+
+def _function_signature(tree, node):
+    """Parse a doxy element tree into RST nodes representing a function signature."""
+    # TODO: parse the references
+    node += addnodes.desc_type('','')
+    node[-1].extend(_parse_refs(tree.find("type")))
+
+    dname = " "+tree.find("name").text
+    node += addnodes.desc_name(dname, dname)
+
+    paramlist = addnodes.desc_parameterlist()
+    params = tree.findall("param")
+
+    for p in params:
+        param = addnodes.desc_parameter('', '', noemph=True)
+
+        param.extend(_parse_refs(p.find("type")))
+        pname = " " + p.find("declname").text
+        param += nodes.emphasis(pname, pname)
+
+        paramlist += param
+
+    node += paramlist
+
+def _macro_signature(tree, node):
+    """Parse a doxy element tree into RST nodes representing a macro signature."""
+    pass
+
+
+def _struct_signature(tree, node):
+    """Parse a doxy element tree into RST nodes representing a struct/union signature."""
+    pass
+
+
+class CAuto(Directive):
+    """Auto-document a C language element.
 
     Options
     -------
 
     hidedef: hide macro definition.
-    showloc: show the location of the definition
+    hideloc: hide the location of the definition.
+    hidedoc: hide doxygen's documentation.
     """
 
+    has_content = True
+    required_arguments = 1
+    optional_arguments = 0
+
     option_spec = {
+        'noindex': directives.flag,
         'hidedef': directives.flag,
+        'hideloc': directives.flag,
+        'hidedoc': directives.flag,
     }
-    option_spec.update(ObjectDescription.option_spec)
 
-    @property
-    def _db(self):
-        """Shortcut to get access to the doxygen db."""
-        return self.env.doxy_db
-
-    def handle_signature(self, sig, signode):
-        """
-
-        Parameters
-        ----------
-
-        sig: Signature. It is parsed as a doxy.Target string.
-        signode: Where nodes will be appended.
-
-        Return
-        ------
-
-        refid for the current object.
-        """
-
-        tgt = doxy.Target(sig)
 
     def add_target_and_index(self, name, sig, signode):
         # type: (Any, unicode, addnodes.desc_signature) -> None
@@ -60,182 +108,54 @@ class CMacro(ObjectDescription):
         """
         return  # do nothing by default
 
+    def run(self):
+        target = self.arguments[0]
+        db = get_db(self.state.document.settings.env)
+        ref = db.resolve_target(target)
+
+        node = addnodes.desc()
+        node['domain'] = 'c'
+        node['objtype'] = node['desctype'] = db.guess_desctype(ref)
+        node['noindex'] = noindex = ('noindex' in self.options)
+
+        element_tree = db.get_tree(ref)
+
+        _function_signature(element_tree, node)
+
+        return [addnodes.index(entries=[("single", target, str(ref), '', None)]), node]
 
 
-class CObject(ObjectDescription):
+class DoxyCDomain(Domain):
+    """Domain for objects documented through sphinx.
+
+    The main function of this domain is to deal with references. Objects
+    themselves are placed in the "c" domain, but the C domain has no support
+    for "refid" references or targets.
     """
-    Description of a C language object.
-    """
 
-    doc_field_types = [
-        TypedField('parameter', label=_('Parameters'),
-                   names=('param', 'parameter', 'arg', 'argument'),
-                   typerolename='type', typenames=('type',)),
-        Field('returnvalue', label=_('Returns'), has_arg=False,
-              names=('returns', 'return')),
-        Field('returntype', label=_('Return type'), has_arg=False,
-              names=('rtype',)),
-    ]
+    name = 'doxy'
+    label = 'Doxy'
+    object_types = {
+    }
 
-    # These C types aren't described anywhere, so don't try to create
-    # a cross-reference to them
-    stopwords = set((
-        'const', 'void', 'char', 'wchar_t', 'int', 'short',
-        'long', 'float', 'double', 'unsigned', 'signed', 'FILE',
-        'clock_t', 'time_t', 'ptrdiff_t', 'size_t', 'ssize_t',
-        'struct', '_Bool',
-    ))
+    roles = {
+    }
+    initial_data = {
+        'objects': {},
+    }
 
-    def _parse_type(self, node, ctype):
-        # type: (nodes.Node, unicode) -> None
-        # add cross-ref nodes for all words
-        for part in [_f for _f in wsplit_re.split(ctype) if _f]:  # type: ignore
-            tnode = nodes.Text(part, part)
-            if part[0] in string.ascii_letters + '_' and \
-               part not in self.stopwords:
-                pnode = addnodes.pending_xref(
-                    '', refdomain='c', reftype='type', reftarget=part,
-                    modname=None, classname=None)
-                pnode += tnode
-                node += pnode
-            else:
-                node += tnode
+    def resolve_xref(self, env, fromdocname, builder,
+                     typ, target, node, contnode):
 
-    def _parse_arglist(self, arglist):
-        # type: (unicode) -> Iterator[unicode]
-        while True:
-            m = c_funcptr_arg_sig_re.match(arglist)  # type: ignore
-            if m:
-                yield m.group()
-                arglist = c_funcptr_arg_sig_re.sub('', arglist)  # type: ignore
-                if ',' in arglist:
-                    _, arglist = arglist.split(',', 1)
-                else:
-                    break
-            else:
-                if ',' in arglist:
-                    arg, arglist = arglist.split(',', 1)
-                    yield arg
-                else:
-                    yield arglist
-                    break
+        if target not in self.data['objects']:
+            return None
 
-    def handle_signature(self, sig, signode):
-        # type: (unicode, addnodes.desc_signature) -> unicode
-        """Transform a C signature into RST nodes."""
-        # first try the function pointer signature regex, it's more specific
-        m = c_funcptr_sig_re.match(sig)  # type: ignore
-        if m is None:
-            m = c_sig_re.match(sig)  # type: ignore
-        if m is None:
-            raise ValueError('no match')
-        rettype, name, arglist, const = m.groups()
+        obj = self.data['objects'][target]
 
-        signode += addnodes.desc_type('', '')
-        self._parse_type(signode[-1], rettype)
-        try:
-            classname, funcname = name.split('::', 1)
-            classname += '::'
-            signode += addnodes.desc_addname(classname, classname)
-            signode += addnodes.desc_name(funcname, funcname)
-            # name (the full name) is still both parts
-        except ValueError:
-            signode += addnodes.desc_name(name, name)
-        # clean up parentheses from canonical name
-        m = c_funcptr_name_re.match(name)
-        if m:
-            name = m.group(1)
+        doxy_target = get_db(self.state.document.settings.env).refid_to_target(target)
 
-        typename = self.env.ref_context.get('c:type')
-        if self.name == 'c:member' and typename:
-            fullname = typename + '.' + name
-        else:
-            fullname = name
+        targetname = str(doxy_target).rstrip('::*')
 
-        if not arglist:
-            if self.objtype == 'function' or \
-                    self.objtype == 'macro' and sig.rstrip().endswith('()'):
-                # for functions, add an empty parameter list
-                signode += addnodes.desc_parameterlist()
-            if const:
-                signode += addnodes.desc_addname(const, const)
-            return fullname
+        return make_refnode(builder, fromdocname, obj[0], doxy_target,
+                            contnode, targetname)
 
-        paramlist = addnodes.desc_parameterlist()
-        arglist = arglist.replace('`', '').replace('\\ ', '')  # remove markup
-        # this messes up function pointer types, but not too badly ;)
-        for arg in self._parse_arglist(arglist):
-            arg = arg.strip()
-            param = addnodes.desc_parameter('', '', noemph=True)
-            try:
-                m = c_funcptr_arg_sig_re.match(arg)  # type: ignore
-                if m:
-                    self._parse_type(param, m.group(1) + '(')
-                    param += nodes.emphasis(m.group(2), m.group(2))
-                    self._parse_type(param, ')(' + m.group(3) + ')')
-                    if m.group(4):
-                        param += addnodes.desc_addname(m.group(4), m.group(4))
-                else:
-                    ctype, argname = arg.rsplit(' ', 1)
-                    self._parse_type(param, ctype)
-                    # separate by non-breaking space in the output
-                    param += nodes.emphasis(' ' + argname, u'\xa0' + argname)
-            except ValueError:
-                # no argument name given, only the type
-                self._parse_type(param, arg)
-            paramlist += param
-        signode += paramlist
-        if const:
-            signode += addnodes.desc_addname(const, const)
-        return fullname
-
-    def get_index_text(self, name):
-        # type: (unicode) -> unicode
-        if self.objtype == 'function':
-            return _('%s (C function)') % name
-        elif self.objtype == 'member':
-            return _('%s (C member)') % name
-        elif self.objtype == 'macro':
-            return _('%s (C macro)') % name
-        elif self.objtype == 'type':
-            return _('%s (C type)') % name
-        elif self.objtype == 'var':
-            return _('%s (C variable)') % name
-        else:
-            return ''
-
-    def add_target_and_index(self, name, sig, signode):
-        # type: (unicode, unicode, addnodes.desc_signature) -> None
-        # for C API items we add a prefix since names are usually not qualified
-        # by a module name and so easily clash with e.g. section titles
-        targetname = 'c.' + name
-        if targetname not in self.state.document.ids:
-            signode['names'].append(targetname)
-            signode['ids'].append(targetname)
-            signode['first'] = (not self.names)
-            self.state.document.note_explicit_target(signode)
-            inv = self.env.domaindata['c']['objects']
-            if name in inv:
-                self.state_machine.reporter.warning(
-                    'duplicate C object description of %s, ' % name +
-                    'other instance in ' + self.env.doc2path(inv[name][0]),
-                    line=self.lineno)
-            inv[name] = (self.env.docname, self.objtype)
-
-        indextext = self.get_index_text(name)
-        if indextext:
-            self.indexnode['entries'].append(('single', indextext,
-                                              targetname, '', None))
-
-    def before_content(self):
-        # type: () -> None
-        self.typename_set = False
-        if self.name == 'c:type':
-            if self.names:
-                self.env.ref_context['c:type'] = self.names[0]
-                self.typename_set = True
-
-    def after_content(self):
-        # type: () -> None
-        if self.typename_set:
-            self.env.ref_context.pop('c:type', None)

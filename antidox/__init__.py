@@ -8,24 +8,26 @@
 
 from sphinx.errors import ExtensionError
 
-from . import doxy
+M = {}
 
-def load_doxydb(app):
+def get_db(app):
+    from . import doxy
+
     cfgdir = app.config.doxygen_xml_dir
+    if cfgdir not in M:
+        M[cfgdir] = doxy.DoxyDB(cfgdir)
 
-    try:
-        setup.doxy_db = doxy.DoxyDB(app.config.doxygen_xml_dir)
-    except IOError as e:
-        raise ExtensionError("[antidox]: cannot open Doxygen XML DB at %s"
-                             %cfgdir) from e
-
-
+    return M[cfgdir]
 
 def setup(app):
-    pass
-
-    # TODO: provide support for multiple Doxygen projects
-    app.connect("builder-inited", load_doxydb)
-    #
+    from . import directives
 
     app.add_config_value("doxygen_xml_dir", "", True)
+
+    # TODO: provide support for multiple Doxygen projects
+    #app.connect("builder-inited", load_doxydb)
+    #
+
+    app.add_directive('doxy', directives.CAuto)
+
+    return {'version': '0.1.1', 'parallel_read_safe': True}

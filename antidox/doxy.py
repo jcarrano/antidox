@@ -527,19 +527,25 @@ class DoxyDB:
                           (n['name'] for n in reversed(nodes[:-1])))
 
     @_refid_str
-    def kindof(self, refid):
-        """Get the Kind for of an element"""
+    def get(self, refid):
+        """Get the Name, Kind for of an element.
+
+        Returns
+        -------
+
+        row object (similar to a named tuple) with fields "name", "kind".
+        """
         cur = self._db_conn.execute(
-            """SELECT kind FROM elements WHERE prefix = ? AND id = ?""",
+            """SELECT name, kind FROM elements WHERE prefix = ? AND id = ?""",
             refid)
 
         # No need to check for more than one result, prefix and id are primary keys
         try:
             result = list(cur)[0]
         except IndexError as e:
-            raise RefError("No such refid: %s"%str(refid))
+            raise RefError("No such refid: %s"%str(refid)) from e
 
-        return result['kind']
+        return result
 
     @_target_str
     def resolve_target(self, target):
@@ -596,7 +602,7 @@ class DoxyDB:
         """%",".join("(%s, ?)"%i for i in range(ncompo)),
             components + (Kind.FILE, path_filter, accept_level))
 
-        r = [RefId(*r) for r in cur]
+        r = list(cur)
 
         if not r:
             raise InvalidTarget("Cannot resolve target: %s"%str(target))
@@ -604,13 +610,13 @@ class DoxyDB:
         if len(r) > 1:
             raise AmbiguousTarget("Target (%s) resolves to more than one element"%str(target))
 
-        return r[0]
+        return RefId(*r[0])
 
     @_refid_str
     def get_tree(self, refid):
         """Get the xml element tree for an element"""
 
-        refkind = self.kindof(refid)
+        refkind = self.get(refid)['kind']
         if refkind in Kind.compounds():
             # compounds are defined in their own file.
             definition_file_base = refid
@@ -631,6 +637,54 @@ class DoxyDB:
             compound_doc = ET.parse(f)
 
         return compound_doc.xpath(xpathq, id=str(refid))[0]
+
+    # TODO: these should be supported. How?
+    # For these ones, maybe have an indexing directive
+    #   doxy.Kind.FILE = 4
+    #   doxy.Kind.NAMESPACE = 5
+    #   doxy.Kind.GROUP = 6
+    #   doxy.Kind.EXAMPLE = 8
+    # For these other ones maybe add new C roles
+    #   doxy.Kind.PROPERTY = 11
+    #   doxy.Kind.VARIABLE = 12
+    #   doxy.Kind.ENUM = 14
+    #   doxy.Kind.ENUMVALUE = 15
+    # These ones we can ignore
+    #   doxy.Kind.FRIEND = 17
+    #   doxy.Kind.PAGE = 7
+    #   doxy.Kind.DIR = 9
+
+    _easy_kinds = {
+        Kind.STRUCT: 'type',
+        Kind.UNION: 'type',
+        Kind.TYPEDEF: 'type',
+        Kind.DEFINE: 'macro',
+        Kind.FUNCTION: 'function'
+        }
+
+    def guess_desctype(self, refid):
+        """Try to guess the "real" type (a C domain role) of a doxygen element.
+
+        This is somewhat related to the Kind, but also depends on the element's parent.
+        """
+
+        name, kind = self.get(refid)
+        if kind in self._easy_kinds:
+            return self._easy_kinds[kind]
+
+        if kind == Kind.VARIABLE:
+            # Doxygen uses "variable" for structure/class members and for
+            # actual variables.
+            # TODO: do this with a query
+            _struct_like = (Kind.UNION, Kind.STRUCT)
+            parent_is_struct = any(self.get(p)["kind"] in _struct_like
+                                   for p in self.find_parents(refid))
+
+            return "member" if parent_is_struct else "var"
+
+        # FIXME: is this correct?
+        raise ValueError("No c desctype for %s"%kind)
+
 
     # TODO: hierarchy walker (sort of os.walkdir with compounds as dirs and members
     #       as files???????)
