@@ -443,7 +443,20 @@ class DoxyDB:
     # TODO: this may need caching???
     @_refid_str
     def find_parents(self, refid):
-        """Get the refid of the compounds where the given element is defined."""
+        """Get the refid of the compounds where the given element is defined.
+
+        Parameters
+        ----------
+
+        refid : refid or str
+            Doxygen "id" field for the element.
+
+        Returns
+        -------
+
+        iterable:
+            All direct ancestors of this element.
+        """
         cur = self._db_conn.execute(
         """SELECT p_prefix, p_id
         FROM hierarchy INNER JOIN elements
@@ -459,8 +472,12 @@ class DoxyDB:
         """Get the refid of members and compounds that are a direct descendants
         of this element.
 
-        Returns an iterable (members, compounds), where each element is an
-        iterable yielding the refid for child compounds and members.
+        Returns
+        -------
+
+        iterable (members, compounds)
+            where each element is an iterable yielding the refid for child
+            compounds and members.
         """
 
         cur = self._db_conn.execute(
@@ -533,7 +550,8 @@ class DoxyDB:
         Returns
         -------
 
-        row object (similar to a named tuple) with fields "name", "kind".
+        row object (similar to a named tuple)
+            with fields "name", "kind".
         """
         cur = self._db_conn.execute(
             """SELECT name, kind FROM elements WHERE prefix = ? AND id = ?""",

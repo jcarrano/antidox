@@ -14,6 +14,7 @@ from pkgutil import get_data
 from lxml import etree as ET
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives
+from sphinx.locale import _
 from sphinx.domains import Domain
 from sphinx import addnodes
 
@@ -38,11 +39,14 @@ def _etree_to_sphinx(e):
     print(str(e))
 
     for action, elem in ET.iterwalk(e, events=("start", "end")):
+        print(action, elem, elem.text)
         if action == "start":
             nclass = _get_node(elem.tag)
-            print(nclass)
 
-            arg = elem.text if isinstance(nclass, nodes.Text) else ''
+            text = elem.text or (_(elem.text) if elem.attrib.get("{antidox}l", False)
+                                 else elem.text)
+            elem.attrib.pop("{antidox}l", False)
+            arg = text if isinstance(nclass, nodes.Text) else ''
 
             node = nclass(arg, **elem.attrib)
             if not isinstance(nclass, nodes.Text) and elem.text:
@@ -56,7 +60,6 @@ def _etree_to_sphinx(e):
 
             if elem.tail:
                 curr_element.append(nodes.Text(elem.tail, elem.tail))
-
 
     return curr_element
 
