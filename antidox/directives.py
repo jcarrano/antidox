@@ -13,7 +13,7 @@ from pkgutil import get_data
 
 from lxml import etree as ET
 from docutils import nodes
-from docutils.parsers.rst import Directive, directives
+from docutils.parsers.rst import Directive, directives, DirectiveError
 from sphinx.locale import _
 from sphinx.domains import Domain
 from sphinx import addnodes
@@ -23,56 +23,109 @@ from .__init__ import get_db
 
 
 function_xslt = ET.XSLT(ET.XML(get_data(__package__,
-                                          os.path.join("templates", "function.xsl"))))
+                                        os.path.join("templates", "function.xsl"))))
+
+class PseudoElementMeta(type):
+    """Metaclass for all elements which appear in the output of the XSLT filter
+    but are not actual reST elements.
+
+    PseudoElementMeta.tag_map keeps a registry of tag name -> class.
+    """
+    tag_map = {}
+
+    def __init__(cls, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        cls.tag_map[cls.TAG_NAME] = cls
+
+
+class PseudoElement(metaclass=PseudoElementMeta):
+    TAG_NAME = None
+
+class PlaceHolder(PseudoElement):
+    """Placeholder elements must be replace before exiting when traversing the
+    element tree.
+
+    They must implement a method `e.replace_placeholder(state)`
+    """
+    pass
+
+
+class DirectiveArg(PseudoElement, nodes.Text):
+    TAG_NAME = "{antidox}directive-argument"
+    tagname = "argument"
+
+
+class DirectiveContent(PseudoElement, nodes.Text):
+    TAG_NAME = "{antidox}directive-content"
+    tagname = "content"
+
+
+class DirectivePlaceholder(PlaceHolder, nodes.Element):
+    """A directive is specified using <antidox:directive>, <antidox:directive-argument>
+    <antidox:directive-content> tags.
+
+    Each <antidox:directive> can contain zero or more <antidox:argument> and
+    an optional content.
+
+    <antidox:directive> Attributes:
+
+    - antidox:name    Name of the directive
+    - other tags: Intgerpreted as directive options.
+
+    <antidox:directive-argument> Arguments to the directive.
+    <antidox:directive-content> Text contents of the directive.
+    """
+    TAG_NAME = "{antidox}directive"
+    tagname = "directive_pholder"
+
+    def run_directive(self, lineno, state, state_machine):
+        """Execute the directive generate a list of nodes."""
+
+        name = self["{antidox}name"]
+
+        directive_class, messages = directives.directive(
+                                    name, state.memo.language, state.document)
+
+        raw_options = self.attlist()
+        options = {k: directive_class.option_spec[k](v) for k, v in raw_options
+                      if not k.startswith("{antidox}")}
+
+        arguments = [n.astext() for n in self.children if n.tagname == "argument"]
+        content = [n.astext() for n in self.children if n.tagname == "content"]
+
+        content_offset = 0
+        block_text = ''
+
+        directive_instance = directive_class(
+                            name, arguments, options, content, lineno,
+                            0, "", state, state_machine)
+
+        try:
+            result = directive_instance.run()
+            result += messages
+        except DirectiveError as error:
+            msg_node = state.reporter.system_message(error.level, error.msg,
+                                                     line=lineno)
+            result = [msg_node]
+
+        return result
+
+    def replace_placeholder(self, *args):
+        """Run the directive and replace this node by the directive's output."""
+        new = self.run_directive(*args)
+
+        self.replace_self(new)
+
 
 def _get_node(tag):
+    if tag in PseudoElementMeta.tag_map:
+        return PseudoElementMeta.tag_map[tag]
+
     try:
         return getattr(addnodes, tag)
     except AttributeError:
         return getattr(nodes, tag)
-
-def _etree_to_sphinx(e):
-    """Convert an element tree to sphinx nodes."""
-
-    curr_element = []
-
-    print(str(e))
-
-    for action, elem in ET.iterwalk(e, events=("start", "end")):
-        print(action, elem, elem.text)
-        if action == "start":
-            nclass = _get_node(elem.tag)
-
-            text = elem.text or (_(elem.text) if elem.attrib.get("{antidox}l", False)
-                                 else elem.text)
-            elem.attrib.pop("{antidox}l", False)
-            arg = text if isinstance(nclass, nodes.Text) else ''
-
-            node = nclass(arg, **elem.attrib)
-            if not isinstance(nclass, nodes.Text) and elem.text:
-                node += nodes.Text(elem.text, elem.text)
-
-            curr_element.append(node)
-            curr_element = node
-        else:
-            if curr_element.parent is not None:
-                curr_element = curr_element.parent
-
-            if elem.tail:
-                curr_element.append(nodes.Text(elem.tail, elem.tail))
-
-    return curr_element
-
-
-def _macro_signature(tree, node):
-    """Parse a doxy element tree into RST nodes representing a macro signature."""
-    pass
-
-
-def _struct_signature(tree, node):
-    """Parse a doxy element tree into RST nodes representing a struct/union signature."""
-    pass
-
 
 class CAuto(Directive):
     """Auto-document a C language element.
@@ -114,6 +167,48 @@ class CAuto(Directive):
     def env(self):
         return self.state.document.settings.env
 
+
+    def _etree_to_sphinx(self, e):
+        """Convert an element tree to sphinx nodes.
+
+        A text node with a antidox:l attribute will be translated using sphinx
+        locale features.
+        """
+
+        curr_element = []
+
+        #print(str(e))
+
+        for action, elem in ET.iterwalk(e, events=("start", "end")):
+            print(action, elem, elem.text)
+            if action == "start":
+                nclass = _get_node(elem.tag)
+
+                text = elem.text or (_(elem.text) if elem.attrib.get("{antidox}l", False)
+                                     else elem.text)
+                elem.attrib.pop("{antidox}l", False)
+                arg = text if issubclass(nclass, nodes.Text) else ''
+
+                node = nclass(arg, **elem.attrib)
+                if not isinstance(node, nodes.Text) and elem.text:
+                    node += nodes.Text(elem.text, elem.text)
+
+                curr_element.append(node)
+                curr_element = node
+            else:
+                if isinstance(curr_element, PlaceHolder):
+                    print(elem, curr_element, "@@@@@@@@@@@")
+                    curr_element.replace_placeholder(self.lineno, self.state, self.state_machine)
+
+                if curr_element.parent is not None:
+                    curr_element = curr_element.parent
+
+                if elem.tail:
+                    curr_element.append(nodes.Text(elem.tail, elem.tail))
+
+        return curr_element
+
+
     def run(self):
         target = self.arguments[0]
         db = get_db(self.env)
@@ -129,8 +224,7 @@ class CAuto(Directive):
         element_tree = db.get_tree(ref)
 
         et2 = function_xslt(element_tree)
-        node = _etree_to_sphinx(et2)
-        #_function_signature(element_tree, node)
+        node = self._etree_to_sphinx(et2)
 
         self.state.document.note_explicit_target(node)
         inv = self.env.domaindata['c']['objects']

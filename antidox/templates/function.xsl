@@ -5,29 +5,45 @@
     <xsl:output method="xml" indent="yes"/>
 
     <xsl:template match="/memberdef[@kind='function']">
-      <desc desctype="function" domain="c" noindex="False" objtype="function">
-        <desc_signature first="False">
-        <xsl:attribute name="ids"><xsl:value-of select="@id"/></xsl:attribute>
-        <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>
-        <xsl:apply-templates select="type|name"/>
-        <desc_parameterlist>
-          <xsl:for-each select="param">
-            <desc_parameter noemph="True">
-                <xsl:apply-templates/>
-            </desc_parameter>
-          </xsl:for-each>
-        </desc_parameterlist>
-        </desc_signature>
-        <desc_content>
-            <xsl:apply-templates select="detaileddescription"/>
-        </desc_content>
-      </desc>
+        <xsl:call-template name="memberdef-internal">
+            <xsl:with-param name="role">function</xsl:with-param>
+        </xsl:call-template>
     </xsl:template>
 
     <xsl:template match="/memberdef[@kind='typedef']">
-      <desc desctype="type" domain="c" noindex="False" objtype="type">
-        <xsl:apply-templates select="type|name"/>
-      </desc>
+        <xsl:call-template name="memberdef-internal">
+            <xsl:with-param name="role">type</xsl:with-param>
+        </xsl:call-template>
+    </xsl:template>
+
+    <xsl:template match="/memberdef[@kind='define']">
+        <xsl:call-template name="memberdef-internal">
+            <xsl:with-param name="role">macro</xsl:with-param>
+        </xsl:call-template>
+    </xsl:template>
+
+    <xsl:template name="memberdef-internal">
+        <xsl:param name = "role" />
+        <desc domain="c" noindex="False">
+            <xsl:attribute name="desctype"><xsl:value-of select="$role"/></xsl:attribute>
+            <xsl:attribute name="objtype"><xsl:value-of select="$role"/></xsl:attribute>
+            <desc_signature first="False">
+                <xsl:attribute name="ids"><xsl:value-of select="@id"/></xsl:attribute>
+                <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>
+                <xsl:apply-templates select="type|name"/>
+                <desc_parameterlist>
+                  <xsl:for-each select="param">
+                    <desc_parameter noemph="True">
+                        <xsl:apply-templates/>
+                    </desc_parameter>
+                  </xsl:for-each>
+                </desc_parameterlist>
+            </desc_signature>
+            <desc_content>
+                <xsl:apply-templates select="initializer"/>
+                <xsl:apply-templates select="detaileddescription"/>
+            </desc_content>
+        </desc>
     </xsl:template>
 
     <xsl:template match="type">
@@ -45,7 +61,7 @@
         </pending_xref>
     </xsl:template>
 
-    <xsl:template match="//declname">
+    <xsl:template match="declname|defname">
         <xsl:text> </xsl:text><emphasis><xsl:value-of select="."/></emphasis>
     </xsl:template>
 
@@ -76,7 +92,7 @@
     </xsl:template>
 
     <xsl:template match='parameterlist'>
-        <rubric><xsl:text>Parameters</xsl:text></rubric>
+        <rubric><xsl:text antidox:l="true">Parameters</xsl:text></rubric>
         <field_list>
             <xsl:apply-templates/>
         </field_list>
@@ -95,6 +111,13 @@
     </xsl:template>
 
     <xsl:template match="simplesect"/>
+
+    <xsl:template match="initializer">
+        <antidox:directive antidox:name="code-block" linenos="">
+        <antidox:directive-argument>c</antidox:directive-argument>
+        <antidox:directive-content><xsl:value-of select="." /></antidox:directive-content>
+        </antidox:directive>
+    </xsl:template>
 
     <!-- This prevents whitespace from polluting the output
          Without this template, text nodes end up as children of elements that
