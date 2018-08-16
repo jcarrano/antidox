@@ -20,6 +20,7 @@ def get_db(app):
     return M[cfgdir]
 
 def setup(app):
+    from docutils.parsers.rst import roles
     from . import directives
 
     app.add_config_value("doxygen_xml_dir", "", True)
@@ -29,5 +30,6 @@ def setup(app):
     #
 
     app.add_directive('doxy', directives.CAuto)
+    roles.register_canonical_role('doxyt', directives.target_role)
 
     return {'version': '0.1.1', 'parallel_read_safe': True}

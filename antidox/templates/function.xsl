@@ -28,7 +28,7 @@
             <xsl:attribute name="desctype"><xsl:value-of select="$role"/></xsl:attribute>
             <xsl:attribute name="objtype"><xsl:value-of select="$role"/></xsl:attribute>
             <desc_signature first="False">
-                <xsl:attribute name="ids"><xsl:value-of select="@id"/></xsl:attribute>
+                <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>
                 <xsl:apply-templates select="type|name"/>
                 <xsl:if test="argsstring/text()|param">

@@ -228,8 +228,7 @@ class CAuto(Directive):
         node = self._etree_to_sphinx(et2)
 
         signode = node[node.first_child_matching_class(addnodes.desc_signature)]
-        signode['first'] = False
-        print(signode["ids"])
+
         self.state.document.note_explicit_target(signode)
         inv = self.env.domaindata['c']['objects']
         if sref in inv:
@@ -239,6 +238,25 @@ class CAuto(Directive):
                 line=self.lineno) # FIXME
         inv[sref] = (self.env.docname, node['objtype'])
 
-        return [addnodes.index(entries=[("single", target, sref, '', None)]), node]
+        #addnodes.index(entries=[("single", target, "c."+sref, '', None)]),
+        return [node]
 
 
+def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
+    """Create a cross reference for a doxygen object, given a human-readable
+    target."""
+
+    db = get_db(inliner.document.settings.env)
+    try:
+        ref = db.resolve_target(text)
+    except (doxy.AmbiguousTarget, doxy.InvalidTarget) as e:
+        msg = inliner.reporter.error(e.args[0], line=lineno)
+        prb = inliner.problematic(rawtext, rawtext, msg)
+        return [prb], [msg]
+
+    node = addnodes.pending_xref(rawsource=rawtext, reftarget=str(ref),
+                                 refdomain='c', reftype='any')
+    # FIXME: use a prettier formatting
+    node += nodes.Text(text, text)
+
+    return [node], []
