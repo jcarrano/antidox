@@ -242,37 +242,3 @@ class CAuto(Directive):
         return [addnodes.index(entries=[("single", target, sref, '', None)]), node]
 
 
-class DoxyCDomain(Domain):
-    """Domain for objects documented through sphinx.
-
-    The main function of this domain is to deal with references. Objects
-    themselves are placed in the "c" domain, but the C domain has no support
-    for "refid" references or targets.
-    """
-
-    name = 'doxy'
-    label = 'Doxy'
-    object_types = {
-    }
-
-    roles = {
-    }
-    initial_data = {
-        'objects': {},
-    }
-
-    def resolve_xref(self, env, fromdocname, builder,
-                     typ, target, node, contnode):
-
-        if target not in self.data['objects']:
-            return None
-
-        obj = self.data['objects'][target]
-
-        doxy_target = get_db(self.state.document.settings.env).refid_to_target(target)
-
-        targetname = str(doxy_target).rstrip('::*')
-
-        return make_refnode(builder, fromdocname, obj[0], doxy_target,
-                            contnode, targetname)
-
