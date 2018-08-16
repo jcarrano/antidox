@@ -31,6 +31,7 @@
                 <xsl:attribute name="ids"><xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>
                 <xsl:apply-templates select="type|name"/>
+                <xsl:if test="argsstring/text()|param">
                 <desc_parameterlist>
                   <xsl:for-each select="param">
                     <desc_parameter noemph="True">
@@ -38,6 +39,7 @@
                     </desc_parameter>
                   </xsl:for-each>
                 </desc_parameterlist>
+                </xsl:if>
             </desc_signature>
             <desc_content>
                 <xsl:apply-templates select="initializer"/>

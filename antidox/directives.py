@@ -186,10 +186,16 @@ class CAuto(Directive):
 
                 text = elem.text or (_(elem.text) if elem.attrib.get("{antidox}l", False)
                                      else elem.text)
-                elem.attrib.pop("{antidox}l", False)
+
                 arg = text if issubclass(nclass, nodes.Text) else ''
 
-                node = nclass(arg, **elem.attrib)
+                # automatically handle list attributes
+                filtered_attrs = {k: (v.split("|") if k in getattr(nclass, "list_attributes", ()) else v)
+                                  for (k, v) in elem.attrib.items()}
+
+                filtered_attrs.pop("{antidox}l", False)
+
+                node = nclass(arg, **filtered_attrs)
                 if not isinstance(node, nodes.Text) and elem.text:
                     node += nodes.Text(elem.text, elem.text)
 
@@ -197,7 +203,6 @@ class CAuto(Directive):
                 curr_element = node
             else:
                 if isinstance(curr_element, PlaceHolder):
-                    print(elem, curr_element, "@@@@@@@@@@@")
                     curr_element.replace_placeholder(self.lineno, self.state, self.state_machine)
 
                 if curr_element.parent is not None:
@@ -214,11 +219,7 @@ class CAuto(Directive):
         db = get_db(self.env)
         ref = db.resolve_target(target)
         sref = str(ref)
-
-        node = addnodes.desc()
-        node['domain'] = 'c'
-        node['objtype'] = node['desctype'] = db.guess_desctype(ref)
-        node['noindex'] = noindex = ('noindex' in self.options)
+        #n = db.get(ref)[0]
         # TODO: support noindex
 
         element_tree = db.get_tree(ref)
@@ -226,7 +227,10 @@ class CAuto(Directive):
         et2 = function_xslt(element_tree)
         node = self._etree_to_sphinx(et2)
 
-        self.state.document.note_explicit_target(node)
+        signode = node[node.first_child_matching_class(addnodes.desc_signature)]
+        signode['first'] = False
+        print(signode["ids"])
+        self.state.document.note_explicit_target(signode)
         inv = self.env.domaindata['c']['objects']
         if sref in inv:
             self.state_machine.reporter.warning(
