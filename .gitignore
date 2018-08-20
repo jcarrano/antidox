@@ -2,3 +2,5 @@
 *.pyo
 __pycache__
 build
+_build
+example_project/xml
