@@ -25,7 +25,7 @@ __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
 function_xslt = ET.XSLT(ET.XML(get_data(__package__,
-                                        os.path.join("templates", "function.xsl"))))
+                                        os.path.join("templates", "compound.xsl"))))
 
 class PseudoElementMeta(type):
     """Metaclass for all elements which appear in the output of the XSLT filter
