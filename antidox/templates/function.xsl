@@ -40,12 +40,44 @@
                   </xsl:for-each>
                 </desc_parameterlist>
                 </xsl:if>
+                <antidox:index/>
             </desc_signature>
             <desc_content>
                 <xsl:apply-templates select="initializer"/>
                 <xsl:apply-templates select="detaileddescription"/>
             </desc_content>
         </desc>
+    </xsl:template>
+
+    <xsl:template match="/memberdef[@kind='enum']">
+        <desc domain="c" noindex="False">
+            <xsl:attribute name="desctype"><xsl:value-of select="type"/></xsl:attribute>
+            <xsl:attribute name="objtype"><xsl:value-of select="type"/></xsl:attribute>
+            <desc_signature first="False">
+                <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
+                <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>
+                <desc_type><xsl:text>enum</xsl:text></desc_type>
+                <xsl:apply-templates select="name"/>
+                <antidox:index/>
+            </desc_signature>
+            <desc_content>
+            <definition_list>
+                <xsl:for-each select="enumvalue">
+                    <definition_list_item objtype="value">
+                        <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
+                        <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>
+                        <term><xsl:value-of select="name"/><xsl:apply-templates select="initializer"/></term>
+                        <definition><xsl:apply-templates select="briefdescription|detaileddescription"/></definition>
+                        <antidox:index/>
+                    </definition_list_item>
+                </xsl:for-each>
+            </definition_list>
+            </desc_content>
+        </desc>
+    </xsl:template>
+
+    <xsl:template match="enumvalue/initializer">
+        <xsl:text> </xsl:text><antidox:interpreted role="code"><xsl:value-of select="."/></antidox:interpreted>
     </xsl:template>
 
     <xsl:template match="type">

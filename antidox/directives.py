@@ -46,10 +46,75 @@ class PlaceHolder(PseudoElement):
     """Placeholder elements must be replace before exiting when traversing the
     element tree.
 
-    They must implement a method `e.replace_placeholder(state)`
+    They must implement a method `e.replace_placeholder(state)` or a
+    `run_directive`
     """
-    pass
+    def replace_placeholder(self, *args):
+        """Run the directive and replace this node by the directive's output."""
+        new = self.run_directive(*args)
 
+        self.replace_self(new)
+
+
+class Index(PlaceHolder, nodes.Inline, nodes.TextElement):
+    """Add a cross-referenceable index entry to the parent of this element.
+    """
+
+    TAG_NAME = "{antidox}index"
+    tagname = "antidox_index"
+    # ~ ``(entrytype, entryname,
+    # ~ target, ignored, key)``.
+
+    def guess_objtype(self):
+        """Try to find an objtype tag in an ancestor of this node."""
+
+        ancestor = self.parent
+
+        while True:
+            if ancestor is None:
+                raise ValueError("objtype not found")
+
+            try:
+                return ancestor['objtype']
+            except KeyError:
+                pass
+
+            ancestor = ancestor.parent
+        else:
+            raise ValueError("objtype not found")
+
+    def run_directive(self, *args, **kwargs):
+        return [addnodes.index(entries=[("single", name, id_, '', None)])
+                for id_, name in zip(self.parent['ids'], self.parent['names'])]
+
+    def replace_placeholder(self, lineno, state, state_machine):
+        state.document.note_explicit_target(self.parent)
+
+        env = state.document.settings.env
+
+        for domain, _, sref in (s.partition(".") for s in self.parent['ids']):
+            inv = env.domaindata[domain]['objects']
+            if sref in inv:
+                state_machine.reporter.warning(
+                    'duplicate %s object description of %s, ' % (domain, sref) +
+                    'other instance in ' + env.doc2path(inv[sref][0]),
+                    line=lineno) # FIXME
+            inv[sref] = (env.docname, self.guess_objtype())
+
+        return super().replace_placeholder(lineno, state, state_machine)
+
+class Interpreted(PlaceHolder, nodes.Element):
+    TAG_NAME = "{antidox}interpreted"
+    tagname = "interpreted"
+
+    def run_directive(self, lineno, state, state_machine):
+        text = self[0].astext()
+
+        nodes, messages = state.inliner.interpreted('', text,
+                                                self['role'], lineno)
+
+        #fixme: do somethin with messages
+        return nodes
 
 class DirectiveArg(PseudoElement, nodes.Text):
     TAG_NAME = "{antidox}directive-argument"
@@ -110,12 +175,6 @@ class DirectivePlaceholder(PlaceHolder, nodes.Element):
             result = [msg_node]
 
         return result
-
-    def replace_placeholder(self, *args):
-        """Run the directive and replace this node by the directive's output."""
-        new = self.run_directive(*args)
-
-        self.replace_self(new)
 
 
 def _get_node(tag):
@@ -180,7 +239,7 @@ class CAuto(Directive):
         #print(str(e))
 
         for action, elem in ET.iterwalk(e, events=("start", "end")):
-            print(action, elem, elem.text)
+            #print(action, elem, elem.text)
             if action == "start":
                 nclass = _get_node(elem.tag)
 
@@ -227,18 +286,6 @@ class CAuto(Directive):
         et2 = function_xslt(element_tree)
         node = self._etree_to_sphinx(et2)
 
-        signode = node[node.first_child_matching_class(addnodes.desc_signature)]
-
-        self.state.document.note_explicit_target(signode)
-        inv = self.env.domaindata['c']['objects']
-        if sref in inv:
-            self.state_machine.reporter.warning(
-                'duplicate C object description of %s, ' % sref +
-                'other instance in ' + self.env.doc2path(inv[sref][0]),
-                line=self.lineno) # FIXME
-        inv[sref] = (self.env.docname, node['objtype'])
-
-        #addnodes.index(entries=[("single", target, "c."+sref, '', None)]),
         return [node]
 
 
