@@ -21,6 +21,8 @@ from sphinx import addnodes
 from . import doxy
 from .__init__ import get_db
 
+__author__ = "Juan I Carrano"
+__copyright__ = "Copyright 2018, Freie Universität Berlin"
 
 function_xslt = ET.XSLT(ET.XML(get_data(__package__,
                                         os.path.join("templates", "function.xsl"))))

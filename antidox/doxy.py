@@ -21,6 +21,9 @@ import functools
 
 from lxml import etree as ET
 
+__author__ = "Juan I Carrano"
+__copyright__ = "Copyright 2018, Freie Universität Berlin"
+
 # TODO: proper logging of warnings
 
 @enum.unique

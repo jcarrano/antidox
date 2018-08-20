@@ -1,12 +1,17 @@
 """
-    nodox
-    ~~~~~
+    antidox
+    ~~~~~~~
 
-    Access Doxygen documentation from within Sphinx. Provides autodoc and
-    autosummary functionality.
+    Access Doxygen documentation from within Sphinx. Provides autodoc-like
+    functionality.
 """
 
 from sphinx.errors import ExtensionError
+
+__author__ = "Juan I Carrano"
+__copyright__ = "Copyright 2018, Freie Universität Berlin"
+
+# FIXME: this get_db stuff is dirty
 
 M = {}
 
