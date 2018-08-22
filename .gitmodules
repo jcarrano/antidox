@@ -1,0 +1,4 @@
+[submodule "example_project2/fixed_point_arith"]
+	path = example_project2/fixed_point_arith
+	url = git@github.com:jcarrano/fixed_point_arith.git
+	branch = no-html-docs
