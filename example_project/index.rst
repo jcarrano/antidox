@@ -12,15 +12,15 @@ Welcome to Example's documentation!
 
    doc2
 
-.. doxy:: aute
+.. doxy:c:: aute
 
-.. doxy:: ipsum
+.. doxy:c:: ipsum
 
 .. c:type:: sint32
 
 .. c:function:: int prod(sint m, sint k)
 
-.. doxy:: bk_1g.h::GK
+.. doxy:c:: bk_1g.h::GK
 
 Indices and tables
 ==================

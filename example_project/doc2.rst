@@ -1,15 +1,17 @@
 Another document
 ================
 
-Test a cross reference to an enum member like :doxyt:`TABLE`.
+.. default-domain:: doxy
 
-.. doxy:: sint
+Test a cross reference to an enum member like :r:`TABLE`.
+
+.. c:: sint
 
 
 section x
 ---------
 
-This functions are related to :doxyt:`aute` and :doxyt:`bk_1g.h::GK`
+This functions are related to :r:`aute` and :r:`bk_1g.h::GK`
 
 .. autofunction:: cosa.function1
 
@@ -18,4 +20,4 @@ section y
 
 Test enums:
 
-.. doxy:: Thing
+.. c:: Thing
