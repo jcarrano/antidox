@@ -159,4 +159,5 @@ texinfo_documents = [
 
 # -- Options for antidox -----------------------------------------------------
 
-doxygen_xml_dir = "xml"
+antidox_doxy_xml_dir = "xml"
+# antidox_xml_stylesheet = "my_custom_transforms.xsl"

@@ -11,6 +11,7 @@
 # TODO: add a better overview
 
 import os
+from io import StringIO
 import re
 import enum
 import sqlite3
@@ -299,6 +300,13 @@ class DoxyDB:
     can create a sqlite3 db, but it's not very well documented (ironic, isn't
     it?).
 
+    Read-only index
+    ---------------
+
+    After the initial database creation, no further modification are done by any
+    method. This ensures DoxyDB is safe to use for parallel builds (where there
+    will be multiple independent processes, each with a copy of the in-memory DB)
+
     refid
     -----
 
@@ -306,10 +314,10 @@ class DoxyDB:
     string of the form string_part_1id_part.
     """
     # TODO: Finish writing docstring
+    # TODO: check if a file can be used (and shared) instead if ":memory:"
 
     def __init__(self, xml_dir):
         self._xml_dir = xml_dir
-        # TODO: set check_same_thread to false
         self._db_conn = None
 
         self._init_db()
@@ -317,8 +325,26 @@ class DoxyDB:
         self._read_index(os.path.join(self._xml_dir, "index.xml"))
         self._load_all_inner()
 
-    def _init_db(self):
-        """Create a DB in memory and create empty tables."""
+    # Pickle support
+    def __getstate__(self):
+        """Dump the database as SQL commands so that it can be pickled."""
+        db_dump = StringIO()
+
+        # It should be safe to assume that the DB is connected (because it is
+        # done in __init__
+        db_dump.writelines(self._db_conn.iterdump())
+
+        return {'_xml_dir': self._xml_dir, '_db_dump': db_dump.getvalue()}
+
+    def __setstate__(self, state):
+        self._xml_dir = state['_xml_dir']
+        self._db_conn = None
+        self._create_db_conn()
+        self._db_conn.executescript(state['_db_dump'])
+
+    def _create_db_conn(self):
+        """Initialize the DB connection and configure it."""
+
         if self._db_conn is not None:
             self._db_conn.close()
             self._db_conn = None
@@ -330,6 +356,10 @@ class DoxyDB:
         self._db_conn.row_factory = sqlite3.Row
         self._db_conn.create_function("match_path", 2, _match_path)
         self._db_conn.create_function("barename", 1, _barename)
+
+    def _init_db(self):
+        """Create a DB in memory and create empty tables."""
+        self._create_db_conn()
 
         # Example:
         # <compound refid="fxos8700__regs_8h" kind="file"><name>fxos8700_regs.h</name>

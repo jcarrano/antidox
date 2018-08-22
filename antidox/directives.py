@@ -19,13 +19,33 @@ from sphinx.domains import Domain
 from sphinx import addnodes
 
 from . import doxy
-from .__init__ import get_db
 
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
-function_xslt = ET.XSLT(ET.XML(get_data(__package__,
-                                        os.path.join("templates", "compound.xsl"))))
+def get_compound_xsl_text():
+    return get_data(__package__, os.path.join("templates", "compound.xsl"))
+
+class Resolver(ET.Resolver):
+    """Resolve the basic stylesheet. If this package is installed as a zip,
+    the XML may not even be a file."""
+
+    def resolve(self, url, id, context):
+        if url == "antidox:compound":
+            return self.resolve_string(get_compound_xsl_text(), context)
+
+def setup(app, env):
+    # fixme: super-dirty
+    global stylesheet
+
+    if app.config.antidox_xml_stylesheet:
+        parser = ET.XMLParser()
+        parser.resolvers.add(Resolver())
+        xml_doc = ET.parse(app.config.antidox_xml_stylesheet, parser)
+    else:
+        xml_doc = ET.XML(get_compound_xsl_text())
+
+    stylesheet = ET.XSLT(xml_doc)
 
 class PseudoElementMeta(type):
     """Metaclass for all elements which appear in the output of the XSLT filter
@@ -235,7 +255,7 @@ class CAuto(Directive):
         A text node with a antidox:l attribute will be translated using sphinx
         locale features.
         """
-
+        print(self.env)
         curr_element = []
 
         #print(str(e))
@@ -277,7 +297,7 @@ class CAuto(Directive):
 
     def run(self):
         target = self.arguments[0]
-        db = get_db(self.env)
+        db = self.env.antidox_db
         ref = db.resolve_target(target)
         sref = str(ref)
         #n = db.get(ref)[0]
@@ -285,7 +305,7 @@ class CAuto(Directive):
 
         element_tree = db.get_tree(ref)
 
-        et2 = function_xslt(element_tree)
+        et2 = stylesheet(element_tree)
         node = self._etree_to_sphinx(et2)
 
         return [node]
@@ -295,7 +315,7 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """Create a cross reference for a doxygen object, given a human-readable
     target."""
 
-    db = get_db(inliner.document.settings.env)
+    db = inliner.document.settings.env.antidox_db
     try:
         ref = db.resolve_target(text)
     except (doxy.AmbiguousTarget, doxy.InvalidTarget) as e:

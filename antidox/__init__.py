@@ -8,31 +8,31 @@
 
 from sphinx.errors import ExtensionError
 
+from . import doxy
+from . import directives
+
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
-# FIXME: this get_db stuff is dirty
 
-M = {}
+def load_db(app, env, docnames):
+    cfgdir = app.config.antidox_doxy_xml_dir
 
-def get_db(app):
-    from . import doxy
+    if not hasattr(env, "antidox_db"):
+        env.antidox_db = doxy.DoxyDB(cfgdir)
 
-    cfgdir = app.config.doxygen_xml_dir
-    if cfgdir not in M:
-        M[cfgdir] = doxy.DoxyDB(cfgdir)
 
-    return M[cfgdir]
+    # FIXME: this stuff is dirty
+    directives.setup(app, env)
 
 def setup(app):
     from docutils.parsers.rst import roles
-    from . import directives
 
-    app.add_config_value("doxygen_xml_dir", "", True)
+    app.add_config_value("antidox_doxy_xml_dir", "", 'env')
+    app.add_config_value("antidox_xml_stylesheet", "", 'env')
 
     # TODO: provide support for multiple Doxygen projects
-    #app.connect("builder-inited", load_doxydb)
-    #
+    app.connect("env-before-read-docs", load_db)
 
     app.add_directive('doxy', directives.CAuto)
     roles.register_canonical_role('doxyt', directives.target_role)
