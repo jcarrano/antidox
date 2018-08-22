@@ -34,18 +34,6 @@ class Resolver(ET.Resolver):
         if url == "antidox:compound":
             return self.resolve_string(get_compound_xsl_text(), context)
 
-def setup(app, env):
-    # fixme: super-dirty
-    global stylesheet
-
-    if app.config.antidox_xml_stylesheet:
-        parser = ET.XMLParser()
-        parser.resolvers.add(Resolver())
-        xml_doc = ET.parse(app.config.antidox_xml_stylesheet, parser)
-    else:
-        xml_doc = ET.XML(get_compound_xsl_text())
-
-    stylesheet = ET.XSLT(xml_doc)
 
 class PseudoElementMeta(type):
     """Metaclass for all elements which appear in the output of the XSLT filter
@@ -305,7 +293,7 @@ class CAuto(Directive):
 
         element_tree = db.get_tree(ref)
 
-        et2 = stylesheet(element_tree)
+        et2 = self.env.domains['doxy'].stylesheet(element_tree)
         node = self._etree_to_sphinx(et2)
 
         return [node]
@@ -329,3 +317,31 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     node += nodes.Text(text, text)
 
     return [node], []
+
+
+class DoxyDomain(Domain):
+    """Domain for Doxygen-related directives and roles.
+
+    The cross reference data is stored in the C domain. The only reason this
+    domain exists is to serve as a container for template and other data that
+    should be shared but not be saved with the environment.
+    """
+    name = 'doxy'
+    label = "Doxygen-documented entities"
+
+    directives = {'c': CAuto}
+    roles = {'r': target_role}
+
+    def __init__(self, env):
+        super().__init__(env)
+
+        self._stylesheet_filename = env.app.config.antidox_xml_stylesheet
+
+        if self._stylesheet_filename:
+            parser = ET.XMLParser()
+            parser.resolvers.add(Resolver())
+            xml_doc = ET.parse(self._stylesheet_filename, parser)
+        else:
+            xml_doc = ET.XML(get_compound_xsl_text())
+
+        self.stylesheet = ET.XSLT(xml_doc)

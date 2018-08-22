@@ -22,9 +22,6 @@ def load_db(app, env, docnames):
         env.antidox_db = doxy.DoxyDB(cfgdir)
 
 
-    # FIXME: this stuff is dirty
-    directives.setup(app, env)
-
 def setup(app):
     from docutils.parsers.rst import roles
 
@@ -34,7 +31,8 @@ def setup(app):
     # TODO: provide support for multiple Doxygen projects
     app.connect("env-before-read-docs", load_db)
 
-    app.add_directive('doxy', directives.CAuto)
-    roles.register_canonical_role('doxyt', directives.target_role)
+    #app.add_directive('doxy', directives.CAuto)
+    #roles.register_canonical_role('doxyt', directives.target_role)
+    app.add_domain(directives.DoxyDomain)
 
     return {'version': '0.1.1', 'parallel_read_safe': True}
