@@ -6,6 +6,16 @@ Antidox: Use Doxygen sanely from within Sphinx
 An antidote to doxy-madness
 ---------------------------
 
+Note: currently under development
+=================================
+
+This software is currently under development and in alpha phase. This means all
+work is being done on `master`, which may break, and APIs may change, all while
+keeping version 0.1.1.
+
+As soon as it is deemed stable enough, the version will be bumped to 0.1.2 and
+this notice will be removed.
+
 Summary
 =======
 
