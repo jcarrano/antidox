@@ -288,13 +288,18 @@ class CAuto(Directive):
         db = self.env.antidox_db
         ref = db.resolve_target(target)
         sref = str(ref)
-        #n = db.get(ref)[0]
+
         # TODO: support noindex
 
         element_tree = db.get_tree(ref)
 
-        et2 = self.env.domains['doxy'].stylesheet(element_tree)
-        node = self._etree_to_sphinx(et2)
+        my_domain = self.env.domains['doxy']
+        rst_etree = my_domain.stylesheet(element_tree)
+        node = self._etree_to_sphinx(rst_etree)
+
+        style_fn = my_domain.stylesheet_filename
+        if style_fn:
+            self.env.note_dependency(style_fn)
 
         return [node]
 
@@ -325,6 +330,15 @@ class DoxyDomain(Domain):
     The cross reference data is stored in the C domain. The only reason this
     domain exists is to serve as a container for template and other data that
     should be shared but not be saved with the environment.
+
+    Attributes
+    ----------
+
+    DoxyDomain.stylesheet_filename: File name of the XSL stylesheet. If None
+        or empty, it means the embedded stylesheet that comes with this extension
+        is being used.
+    DoxyDomain.stylesheet: An lxml.etree.XSLT object to be used as a stylesheet
+        for converting doxygen xml into reST nodes.
     """
     name = 'doxy'
     label = "Doxygen-documented entities"
@@ -335,12 +349,12 @@ class DoxyDomain(Domain):
     def __init__(self, env):
         super().__init__(env)
 
-        self._stylesheet_filename = env.app.config.antidox_xml_stylesheet
+        self.stylesheet_filename = env.app.config.antidox_xml_stylesheet
 
-        if self._stylesheet_filename:
+        if self.stylesheet_filename:
             parser = ET.XMLParser()
             parser.resolvers.add(Resolver())
-            xml_doc = ET.parse(self._stylesheet_filename, parser)
+            xml_doc = ET.parse(self.stylesheet_filename, parser)
         else:
             xml_doc = ET.XML(get_compound_xsl_text())
 
