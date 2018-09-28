@@ -25,8 +25,8 @@ documentation for entities in sphinx documents.
 It is intended to be *fast* and simple, though *easily customizable*.
 
 Document generation (i.e. conversion between doxy-xml and reStructuredText) is
-driven by XML stylesheets (powered by lxml_, while indexing and selection of
-documentable entities is done by a SQL database (sqlite3_).
+driven by XML stylesheets (powered by lxml_,) while indexing and selection of
+documentable entities is done by a SQL database (sqlite3_.)
 
 Objectives
 ==========
@@ -42,24 +42,58 @@ Objectives
 Functionality
 =============
 
-Directives and roles
---------------------
-
 References
 ----------
 
-The standard way to refer to entities in antidox is by `file_path::entity_name``,
-where ``file_path`` is base name of the file, along with enough directory
-components to make the path unique (similar to the default setting in Doxygen)
+The standard way to refer to entities in antidox is by ``file_path::entity_name``,
+(called a *target* in antidox terms) where ``file_path`` is base name of the
+file, along with enough directory components to make the path unique
+(similar to the default settings in Doxygen.)
+
+Note that while a target should correspond to only one code entity, the same
+entity can be described by different targets. For example ``a/b.h::f`` and
+``b.h::f``.
+
+Directives, roles and domains
+-----------------------------
+
+Directives and roles are contained in an `doxy` domain.
+
+c *<target>*
+  This directive inserts the documentation corresponding to the given target.
+  There is nothing hardcoded about the reST nodes that get created. Everything,
+  including index and cross reference creation is controlled by the XSL template.
+
+r *<target>*
+  Insert a cross reference to the given target's documentation.
 
 Configuration variables
 -----------------------
 
+antidox_doxy_xml_dir
+  Directory where the doxygen XML files are to be found.
+
+antidox_xml_stylesheet
+  (Optional) Specify an alternative stylesheet (see `Customization`_.)
+
 Customization
 -------------
 
-TODO: In the future it will be possible to tell antidox to use a user-supplied
-xsl template, and also to inherit from the default template.
+antidox comes with a default template in the form of a XML stylesheet. It is
+possible to change the rendering of elements and even add support for other
+Doxygen constructs by supplying an alternate stylesheet through the
+`antidox_xml_stylesheet` parameter.
+
+A custom stylesheet can inherit from (or include) the default one by using an
+`import` statement. The most basic stylesheet being
+
+::
+
+  <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
+    <xsl:import href="antidox:compound"/>
+  </xsl:stylesheet>
+
+
 
 Implemetation Overview
 ======================
@@ -119,6 +153,81 @@ This tool tries to reduce Doxygen to a tool for parsing code and comments and
 to give documentation writers explicit control over the layout and placement of
 the different entities.
 
+The templating and XML handling logic is designed so that in the future it is
+possible to run the XSL transformation online, using generic tools. For this
+reason, there should not be any custom functions defined and no stylesheet
+parameters that depend on the plugin to set them.
+
+Defining XML templates
+======================
+
+Restructured Text documents (and fragments of documents) have a tree-like
+structure that can be approximately described by an element tree. In fact,
+Sphinx can output XML.
+
+antidox works by converting a XML element tree that is the result of the
+transform (we will call this "intermediate XML") into reST nodes. For most
+elements the transformation is straightforward as there is a direct
+correspondence. Special cases like directives, localization and indices are
+handled via the ``antidox`` XML namespace.
+
+The XSL processing step (converting to Doxygen XML into intermediate XML) is
+done in such a way that it should be possible to do it offline, using a generic
+XML processor. That means there a no special functions and no special template
+parameters. During normal operation, the intermediate XML is never written to
+a document, but it is kept in memory as an element tree.
+
+reST nodes are constructed from an argument that is the "raw" source code for
+that element, plus a set of keyword arguments. Only nodes derived from ``Text``
+can contain text. The rest of the nodes must have a Text-derived node as a
+child if the are to have text.
+
+From the intermediate XML, all unqualified elements are converted to reST nodes
+of the same name (``docutils.nodes`` and ``sphinx.addnodes`` are searched).
+If the element does not map to a Text-derived node and there is a TEXT element
+inside, a new Text node is created. Otherwise the text is used to create the
+node.
+
+antidoc-specific extensions
+---------------------------
+
+``antidox:l`` (attribute)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When set to ``"true"`` in a Text-derived element, the text is run through
+Sphinx's locale function.
+
+``antidox:directive``
+~~~~~~~~~~~~~~~~~~~~~
+
+This element calls a directive. reST directives are not nodes: they generate
+nodes that are added to the tree. This element can have the following parameters:
+
+``antidox:name``
+  Name of the directive to invoke ("directive type" in reST terminology.)
+
+Other parameters
+  Other parameters will be intepreted as directive options.
+
+``antidox:directive-argument``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Placed inside `antidox:directive`_, its TEXT is translated to arguments for that
+directive.
+
+``antidox:directive-content``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This element's TEXT is the content of the containing directive.
+
+``antidox:compound``
+~~~~~~~~~~~~~~~~~~~~
+
+Name of the builtin default stylesheet, to be used as ``href`` in ``xsl:import``
+and ``xsl:include`` statements.
+
+Since this package can be installed as a zip, the actual XSL file may not exist
+as such in the filesystem. For this reason a custom resolver is defined.
 
 TODO
 ====
@@ -126,8 +235,9 @@ TODO
 * It would be good to have a way of detecting that a XML file has not changed
   to avoid generating it again.
 * Autoindex functionality.
-* Custom templates.
 * Document custom XML nodes (antidox namespace).
+* Complete docs.
+* Some important doxygen constructs are missing.
 
 .. _lxml: https://lxml.de/
 .. _sqlite3: https://docs.python.org/3/library/sqlite3.html

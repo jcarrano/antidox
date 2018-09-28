@@ -53,7 +53,7 @@ class PseudoElement(metaclass=PseudoElementMeta):
     TAG_NAME = None
 
 class PlaceHolder(PseudoElement):
-    """Placeholder elements must be replace before exiting when traversing the
+    """Placeholder elements must be replaced before exiting when traversing the
     element tree.
 
     They must implement a method `e.replace_placeholder(state)` or a

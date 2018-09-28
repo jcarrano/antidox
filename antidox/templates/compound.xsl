@@ -144,6 +144,7 @@
         </xsl:if>
     </xsl:template>
 
+    <!-- Kill simplesects by default -->
     <xsl:template match="simplesect"/>
 
     <xsl:template match="initializer">
