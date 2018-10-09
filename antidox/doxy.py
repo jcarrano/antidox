@@ -657,7 +657,7 @@ class DoxyDB:
 
         if not r:
             raise InvalidTarget("Cannot resolve target: %s"%str(target))
-
+        # FIXME: this is failing for paths that are a prefix of another one.
         if len(r) > 1:
             raise AmbiguousTarget("Target (%s) resolves to more than one element"%str(target))
 
