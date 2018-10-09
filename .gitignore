@@ -1,6 +1,8 @@
 *.pyc
 *.pyo
 __pycache__
-build
+build/
 _build
 example_project/xml
+dist/
+*.egg-info/
