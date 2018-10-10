@@ -8,9 +8,6 @@
 
 """
 
-import os
-from pkgutil import get_data
-
 from lxml import etree as ET
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives, DirectiveError
@@ -19,20 +16,10 @@ from sphinx.domains import Domain
 from sphinx import addnodes
 
 from . import doxy
+from .xtransform import get_stylesheet
 
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
-
-def get_compound_xsl_text():
-    return get_data(__package__, os.path.join("templates", "compound.xsl"))
-
-class Resolver(ET.Resolver):
-    """Resolve the basic stylesheet. If this package is installed as a zip,
-    the XML may not even be a file."""
-
-    def resolve(self, url, id, context):
-        if url == "antidox:compound":
-            return self.resolve_string(get_compound_xsl_text(), context)
 
 
 class PseudoElementMeta(type):
@@ -351,11 +338,4 @@ class DoxyDomain(Domain):
 
         self.stylesheet_filename = env.app.config.antidox_xml_stylesheet
 
-        if self.stylesheet_filename:
-            parser = ET.XMLParser()
-            parser.resolvers.add(Resolver())
-            xml_doc = ET.parse(self.stylesheet_filename, parser)
-        else:
-            xml_doc = ET.XML(get_compound_xsl_text())
-
-        self.stylesheet = ET.XSLT(xml_doc)
+        self.stylesheet = get_stylesheet(self.stylesheet_filename)

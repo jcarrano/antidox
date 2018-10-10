@@ -11,10 +11,12 @@ import cmd
 import argparse
 import functools
 import pickle
+import sqlite3
 
 from lxml import etree as ET
 
 from . import doxy
+from .xtransform import get_stylesheet
 
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
@@ -55,19 +57,22 @@ def _any_to_refid(f):
 class Shell(cmd.Cmd):
     """Interact with the database created by that antidox.doxy module."""
 
+    prompt = "antidox> "
+    intro = 'This is the antidox debug shell. Type "?" or "help" for help'
+
+    """Command that can be run withour a database loaded"""
+    NOINIT_CMDS = ("", "info", "new", "restore", "load_sphinx", "?", "!", "EOF",
+                   "help", "sty")
+
     def __init__(self, doxydb=None, **kwargs):
         self.db = doxydb
 
         super().__init__(**kwargs)
 
-    @classmethod
-    def from_xmldir(cls, xdir):
-        db = doxy.DoxyDB(xdir)
-        return cls(doxydb=db)
+        self.do_sty("")
 
     def precmd(self, line):
-        if line and self.db is None and line.strip().split()[0] not in (
-                    "", "info", "new", "restore", "load_sphinx", "?", "!", "EOF", "help"):
+        if line and self.db is None and line.strip().split()[0] not in NOINIT_CMDS:
             print("No database loaded")
             return ""
         else:
@@ -94,7 +99,7 @@ class Shell(cmd.Cmd):
         new <doxy xml dir>
         Read an XML directory and create a database. Old DB is discarded."""
         try:
-            db = doxy.DoxyDB(xml_dir)
+            self.db = doxy.DoxyDB(xml_dir)
         except Exception as e:
             print("error: ", "".join(e.args))
 
@@ -193,6 +198,9 @@ class Shell(cmd.Cmd):
         show t <target>
 
         Show the source for a given element.
+
+        Note: this command does some whitespace modifications so that the resulting
+        XML can be pretty-printed.
         """
         root = self.db.get_tree(refid)
         for element in root.iter():
@@ -204,19 +212,69 @@ class Shell(cmd.Cmd):
 
         print(ET.tostring(root, pretty_print=True, encoding='unicode'))
 
-def main():
-    parser = argparse.ArgumentParser(description="antidox database debugger")
+    @_catch
+    def do_sty(self, filename):
+        """
+        sty [template.xsl]
 
-    parser.add_argument('-x', '--xml-dir', help="Doxygen XML directory")
+        Load a XML template file. Call with no argument to restore the default.
+        """
+
+        self.stylesheet = get_stylesheet(filename)
+
+    @_catch
+    @_any_to_refid
+    def do_xform(self, refid):
+        """
+        xform r refid
+        xform t target
+
+        Fetch an element and apply the stylesheet to it.
+
+        Note: this command does some whitespace modifications so that the resulting
+        XML can be pretty-printed.
+        """
+        root = self.db.get_tree(refid)
+
+        transformed = self.stylesheet(root)
+        for element in transformed.iter():
+            if element.tail is not None and not element.tail.strip():
+                element.tail = None
+
+        print(ET.tostring(transformed, pretty_print=True, encoding='unicode'))
+
+    def do_shell(self, line):
+        """Run an arbitrary SQL query on the database.
+
+        e.g.: `! SELECT name, id FROM elements WHERE kind in compound_kinds`
+        """
+        try:
+            cur = self.db._db_conn.execute(line)
+            print("#{}".format("\t".join(cn[0] for cn in cur.description)))
+            for r in cur:
+                print("\t".join(str(x) for x in r))
+        except sqlite3.Error as e:
+            print("Exception while executing SQL:")
+            print(e)
+
+def main():
+    parser = argparse.ArgumentParser(description="antidox database debugger",
+        epilog = """Use the -e option to start the application with a database already open:
+    shell.py -e "new path/to/xml" OR shell.py -e "restore saved_db.pickle"
+    """)
+
+    parser.add_argument('-e', action="append",
+                        help="Run command as if it was given in the terminal. Can be specified multiple times.")
 
     ns = parser.parse_args()
 
-    if ns.xml_dir is not None:
-        app = Shell.from_xmldir(ns.xml_dir)
-    else:
-        app = Shell()
+    app = Shell()
 
-    app.cmdloop()
+    for cmdline in ns.e or ():
+        if app.onecmd(cmdline):
+            break
+    else:
+        app.cmdloop()
 
 if __name__ == "__main__":
     main()
