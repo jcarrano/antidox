@@ -247,14 +247,21 @@ def _match_path(p1, p2):
 
     As a special case, if the second argument is None, or empty, it is always
     considered a match. This simplifies query logic when the target does not
-    have a path component."""
+    have a path component.
+
+    If p2 starts with "./" then the paths must math entirely. This to allow
+    addressing in the case where a path is a prefix of another.
+    """
     if not p2:
         return True
 
     part1 = pathlib.Path(p1).parts
     part2 = pathlib.Path(p2).parts
 
-    minlen = min(len(part1), len(part2))
+    if p2.startswith(".") and part2 and not part2[0].startswith("."):
+        minlen = 0
+    else:
+        minlen = min(len(part1), len(part2))
 
     return part1[-minlen:] == part2[-minlen:]
 
@@ -571,7 +578,15 @@ class DoxyDB:
             raise ConsistencyError("Root node is not a file")
 
         if len(nodes) == 1:
-            return Target(nodes[0]['name'], '*')
+            # Fix for #15. Check if the resulting name is ambiguous.
+            path = nodes[0]['name']
+            n_matching = self._db_conn.execute(
+                """SELECT COUNT(*) FROM elements
+                    WHERE kind = ? AND  match_path(name, ?)
+                """, (Kind.FILE, path)).fetchone()[0]
+
+            return Target(path if n_matching == 1
+                          else ".{}{}".format(os.path.sep, path), '*')
         else:
             return Target(nodes[-1]['name'],
                           (n['name'] for n in reversed(nodes[:-1])))
