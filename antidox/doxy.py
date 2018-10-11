@@ -434,7 +434,7 @@ class DoxyDB:
                                         "(?, ?, ?, ?)",
                                         this_refid + (name, kind))
                 except sqlite3.IntegrityError:
-                    print(this_refid, name, kind)
+                    print(this_refid, name, kind) # FIXME: replace by proper logging
                     raise
 
                 if p_refid is not None:

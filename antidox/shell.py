@@ -12,6 +12,7 @@ import argparse
 import functools
 import pickle
 import sqlite3
+import timeit
 
 from lxml import etree as ET
 
@@ -94,12 +95,26 @@ class Shell(cmd.Cmd):
         for t in tables:
             print("\t", t[0])
 
+        self._print_cursor(self.db._db_conn.execute("""
+        SELECT kind AS element_kind, COUNT(*) FROM elements GROUP BY kind
+        """))
+
+        self._print_cursor(self.db._db_conn.execute("""
+        SELECT COUNT(*) AS total_elements FROM elements
+        """))
+
+        self._print_cursor(self.db._db_conn.execute("""
+        SELECT COUNT(*) AS number_of_parent_elements FROM
+            (SELECT DISTINCT p_prefix, p_id FROM hierarchy)
+        """))
+
     def do_new(self, xml_dir):
         """
         new <doxy xml dir>
         Read an XML directory and create a database. Old DB is discarded."""
         try:
-            self.db = doxy.DoxyDB(xml_dir)
+            _f = lambda : doxy.DoxyDB(xml_dir)
+            print("DB loaded in %f seconds"%timeit.timeit("self.db=_f()", number=1, globals=locals()))
         except Exception as e:
             print("error: ", "".join(e.args))
 
@@ -249,13 +264,18 @@ class Shell(cmd.Cmd):
         e.g.: `! SELECT name, id FROM elements WHERE kind in compound_kinds`
         """
         try:
-            cur = self.db._db_conn.execute(line)
-            print("#{}".format("\t".join(cn[0] for cn in cur.description)))
-            for r in cur:
-                print("\t".join(str(x) for x in r))
+            self._print_cursor(self.db._db_conn.execute(line))
         except sqlite3.Error as e:
             print("Exception while executing SQL:")
             print(e)
+
+    @staticmethod
+    def _print_cursor(cur):
+        """Pretty-print the result of a query."""
+        print("#{}".format("\t".join(cn[0] for cn in cur.description)))
+        for r in cur:
+            print("\t".join(str(x) for x in r))
+
 
 def main():
     parser = argparse.ArgumentParser(description="antidox database debugger",
