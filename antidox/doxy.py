@@ -613,6 +613,22 @@ class DoxyDB:
 
         return result
 
+    @staticmethod
+    def _cur_to_refid(cur, target):
+        """Turn a cursor into a Refid. Raise errors if it is empty or has more
+        than one element."""
+
+        r = list(cur)
+
+        if not r:
+            raise InvalidTarget("Cannot resolve target: %s"%str(target))
+        # FIXME: this is failing for paths that are a prefix of another one.
+        if len(r) > 1:
+            raise AmbiguousTarget("Target (%s) resolves to more than one element"%str(target))
+
+        return RefId(*r[0])
+
+
     @_target_str
     def resolve_target(self, target):
         """Convert a target string into a refid.
@@ -668,15 +684,27 @@ class DoxyDB:
         """%",".join("(%s, ?)"%i for i in range(ncompo)),
             components + (Kind.FILE, path_filter, accept_level))
 
-        r = list(cur)
+        return self._cur_to_refid(cur, target)
 
-        if not r:
-            raise InvalidTarget("Cannot resolve target: %s"%str(target))
-        # FIXME: this is failing for paths that are a prefix of another one.
-        if len(r) > 1:
-            raise AmbiguousTarget("Target (%s) resolves to more than one element"%str(target))
+    def resolve_name(self, kind, name):
+        """Find an element with the specified kind an name. If kind is not given,
+        all kinds are searched.
 
-        return RefId(*r[0])
+        More than one result will trigger an AmbiguousTarget exception.
+        Less than one, and InvalidTarget.
+        """
+
+        _kind = kind if kind else "*"
+        if kind:
+            cur = self._db_conn.execute(
+            """SELECT prefix, id FROM elements WHERE kind = ? AND name = ?""",
+            (kind, name))
+        else:
+            cur = self._db_conn.execute(
+            """SELECT prefix, id FROM elements WHERE name = ?""",
+            (name,))
+
+        return self._cur_to_refid(cur, (kind, name))
 
     @_refid_str
     def get_tree(self, refid):

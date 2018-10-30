@@ -73,7 +73,7 @@ class Shell(cmd.Cmd):
         self.do_sty("")
 
     def precmd(self, line):
-        if line and self.db is None and line.strip().split()[0] not in NOINIT_CMDS:
+        if line and self.db is None and line.strip().split()[0] not in self.NOINIT_CMDS:
             print("No database loaded")
             return ""
         else:
@@ -161,6 +161,22 @@ class Shell(cmd.Cmd):
         Get a target name for a refid.
         """
         print(self.db.refid_to_target(refid))
+
+    @_catch
+    def do_n(self, kind_name):
+        """
+        n [<kind>] <name>
+        Get a refid with a name and of a kind (optional).
+        """
+        try:
+            kind_s, name = kind_name.split()
+        except ValueError:
+            kind = None
+            name = kind_name
+        else:
+            kind = doxy.Kind.from_attr(kind_s)
+
+        print(self.db.resolve_name(kind, name))
 
     def _print_refids(self, rs):
         """Pretty print a list of refids"""
