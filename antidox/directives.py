@@ -183,8 +183,9 @@ def _get_node(tag):
     except AttributeError:
         return getattr(nodes, tag)
 
-class CAuto(Directive):
-    """Auto-document a C language element.
+class DoxyExtractor(Directive):
+    """Create a Sphinx document for a Doxygen entity. This class does not
+    provide a run method. Subclass it to implement it.
 
     Options
     -------
@@ -200,9 +201,9 @@ class CAuto(Directive):
 
     option_spec = {
         'noindex': directives.flag,
-        'hidedef': directives.flag,
-        'hideloc': directives.flag,
-        'hidedoc': directives.flag,
+        'hidedef': directives.flag, # TODO: support hidedef
+        'hideloc': directives.flag, # TODO: support hideloc
+        'hidedoc': directives.flag, # TODO: support hidedoc
     }
 
 
@@ -223,6 +224,10 @@ class CAuto(Directive):
     def env(self):
         return self.state.document.settings.env
 
+    @property
+    def db(self):
+        """Get the DoxyDB object."""
+        return self.env.antidox_db
 
     def _etree_to_sphinx(self, e):
         """Convert an element tree to sphinx nodes.
@@ -270,15 +275,20 @@ class CAuto(Directive):
         return curr_element
 
 
-    def run(self):
-        target = self.arguments[0]
-        db = self.env.antidox_db
-        ref = db.resolve_target(target)
-        sref = str(ref)
+    def run_reference(self, ref):
+        """Convert the doxygen XML of a reference into Sphinx nodes.
 
+        Parameters
+        ----------
+        ref: a antidox.Doxy.RefId (or string)
+
+        Returns
+        -------
+        nodes: List of sphinx nodes.
+        """
         # TODO: support noindex
 
-        element_tree = db.get_tree(ref)
+        element_tree = self.db.get_tree(ref)
 
         my_domain = self.env.domains['doxy']
         rst_etree = my_domain.stylesheet(element_tree)
@@ -290,6 +300,31 @@ class CAuto(Directive):
 
         return [node]
 
+class CTarget(DoxyExtractor):
+    """Auto-document a C language element specified as a target string"""
+
+    def run(self):
+        target = self.arguments[0]
+        ref = self.db.resolve_target(target)
+
+        return self.run_reference(ref)
+
+class DoxyEntity(DoxyExtractor):
+    """Auto-document any doxygen entity, given as <name> or <kind> <name>."""
+
+    def run(self):
+        try:
+            kind, name = self.arguments[:2]
+        except ValueError:
+            kind = None
+            name = self.arguments[0]
+
+        ref = self.db.resolve_name(kind, name)
+
+        return self.run_reference(ref)
+
+# save this for the future:
+#     _ENTITY_RE = re.compile(r"(?:(?P<kind>\w+)\[(?P<name1>\w+)\])|(?P<name2>\w+)")
 
 def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """Create a cross reference for a doxygen object, given a human-readable
@@ -330,7 +365,7 @@ class DoxyDomain(Domain):
     name = 'doxy'
     label = "Doxygen-documented entities"
 
-    directives = {'c': CAuto}
+    directives = {'c': CTarget, 'e': DoxyEntity}
     roles = {'r': target_role}
 
     def __init__(self, env):

@@ -687,7 +687,7 @@ class DoxyDB:
         return self._cur_to_refid(cur, target)
 
     def resolve_name(self, kind, name):
-        """Find an element with the specified kind an name. If kind is not given,
+        """Find an element with the specified kind and name. If kind is not given,
         all kinds are searched.
 
         More than one result will trigger an AmbiguousTarget exception.
