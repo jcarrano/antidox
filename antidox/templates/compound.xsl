@@ -99,7 +99,8 @@
     <xsl:template match="/compounddef"/>
 
     <xsl:template match="/compounddef[briefdescription//text()]">
-        <section ids="whatever">
+        <section>
+        <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
         <title><xsl:apply-templates select="briefdescription"/></title>
         <xsl:apply-templates select="detaileddescription/para/heading[@level=1]"/>
         </section>
@@ -123,7 +124,7 @@
         <xsl:variable name="heading" select="generate-id(.)"/>
         <xsl:variable name="level" select="number(@level)"/>
         <section> <!-- TODO: add section ID (how do we handle duplicates?) -->
-            <xsl:attribute name="ids">kk-<xsl:value-of select="position()"/></xsl:attribute>
+            <xsl:attribute name="ids">c.<xsl:value-of select="ancestor::*/@id"/>-<xsl:call-template name="string-to-ids"/></xsl:attribute>
             <title><xsl:value-of select="."/></title>
             <xsl:apply-templates
 select="parent::*/following-sibling::para[(ref or text()[normalize-space()]) and generate-id(preceding::heading[1])=$heading]|
@@ -237,6 +238,17 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         <antidox:directive-content><xsl:value-of select="." /></antidox:directive-content>
         </antidox:directive>
     </xsl:template>
+
+    <xsl:template name="string-to-ids"><xsl:value-of select="
+          translate(
+            translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ', 'abcdefghijklmnopqrstuvwxyz-'),
+            translate(
+              .,
+              'abcdefghijklmnopqrstuvwxyz0123456789-_',
+              ''
+            ),
+            ''
+          )" /></xsl:template>
 
     <!-- This prevents whitespace from polluting the output
          Without this template, text nodes end up as children of elements that
