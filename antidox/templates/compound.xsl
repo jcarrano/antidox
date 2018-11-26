@@ -96,6 +96,7 @@
         <paragraph><xsl:apply-templates/></paragraph>
     </xsl:template>-->
 
+    <!--Small workaround for groups without @brief -->
     <xsl:template match="/compounddef"/>
 
     <xsl:template match="/compounddef[briefdescription//text()]">
@@ -158,6 +159,8 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
 
     <xsl:template match="bold"><strong><xsl:apply-templates/></strong></xsl:template>
 
+    <xsl:template match="emphasis"><emphasis><xsl:apply-templates/></emphasis></xsl:template>
+
     <xsl:template match="computeroutput">
         <literal><xsl:value-of select="."/></literal>
     </xsl:template>
@@ -186,7 +189,7 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
     <xsl:template match="para/para|briefdescription/para">
         <xsl:apply-templates />
     </xsl:template>
-    <xsl:template match="para/text()|bold/text()">
+    <xsl:template match="para/text()|bold/text()|emphasis/text()">
         <xsl:copy/>
     </xsl:template>
 
