@@ -103,6 +103,8 @@
         <section>
         <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
         <title><xsl:apply-templates select="briefdescription"/></title>
+        <!-- Catch all that is outside a heading -->
+        <xsl:apply-templates select="detaileddescription/child::*[not(preceding::heading)]"/>
         <xsl:apply-templates select="detaileddescription/para/heading[@level=1]"/>
         </section>
     </xsl:template>
@@ -176,12 +178,23 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
 <xsl:text>
 </xsl:text><!-- this newline is the key -->
     </xsl:template>
-    <xsl:template match="codeline/highlight/text()"><xsl:copy/></xsl:template>
+
+    <xsl:template match="codeline/highlight/text()"><xsl:value-of select="normalize-space(.)"/></xsl:template>
     <xsl:template match="codeline/highlight/sp"><xsl:text> </xsl:text></xsl:template>
 
     <xsl:template match="declname|defname">
         <xsl:text> </xsl:text><emphasis><xsl:value-of select="."/></emphasis>
     </xsl:template>
+
+    <xsl:template match="ulink">
+        <reference>
+            <xsl:attribute name="name"><xsl:value-of select="."/></xsl:attribute>
+            <xsl:attribute name="refuri"><xsl:value-of select="@url"/></xsl:attribute>
+            <xsl:value-of select="."/>
+        </reference>
+    </xsl:template>
+
+    <!-- TODO: provide special case for RFC urls using the :rfc: role -->
 
     <xsl:template match="para">
         <paragraph><xsl:apply-templates /></paragraph>
@@ -233,6 +246,10 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
 
     <xsl:template match="simplesect[@kind='note']">
     <note><xsl:apply-templates/></note>
+    </xsl:template>
+
+    <xsl:template match="simplesect[@kind='see']">
+    <seealso><xsl:apply-templates/></seealso>
     </xsl:template>
 
     <xsl:template match="initializer">
