@@ -195,10 +195,6 @@ class DoxyExtractor(Directive):
     hidedoc: hide doxygen's documentation.
     """
 
-    has_content = True
-    required_arguments = 1
-    optional_arguments = 0
-
     option_spec = {
         'noindex': directives.flag,
         'hidedef': directives.flag, # TODO: support hidedef
@@ -303,6 +299,11 @@ class DoxyExtractor(Directive):
 class CTarget(DoxyExtractor):
     """Auto-document a C language element specified as a target string"""
 
+    # TODO: do something with content
+    has_content = True
+    required_arguments = 1
+    optional_arguments = 0
+
     def run(self):
         target = self.arguments[0]
         ref = self.db.resolve_target(target)
@@ -312,12 +313,19 @@ class CTarget(DoxyExtractor):
 class DoxyEntity(DoxyExtractor):
     """Auto-document any doxygen entity, given as <name> or <kind> <name>."""
 
+    # TODO: do something with content
+    has_content = True
+    required_arguments = 1
+    optional_arguments = 1
+
     def run(self):
         try:
-            kind, name = self.arguments[:2]
+            _kind, name = self.arguments[:2]
         except ValueError:
             kind = None
             name = self.arguments[0]
+        else:
+            kind = doxy.Kind.from_attr(_kind)
 
         ref = self.db.resolve_name(kind, name)
 
