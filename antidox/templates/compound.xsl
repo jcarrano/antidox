@@ -104,7 +104,8 @@
         <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
         <title><xsl:apply-templates select="briefdescription"/></title>
         <!-- Catch all that is outside a heading -->
-        <xsl:apply-templates select="detaileddescription/child::*[not(preceding::heading)]"/>
+        <xsl:apply-templates select="detaileddescription/para[not(text()[normalize-space()])]/child::*[not(preceding::heading or self::heading)]|
+                                     detaileddescription/para[text()[normalize-space()] and not(preceding::heading or self::heading)]"/>
         <xsl:apply-templates select="detaileddescription/para/heading[@level=1]"/>
         </section>
     </xsl:template>
@@ -128,7 +129,8 @@
         <xsl:variable name="level" select="number(@level)"/>
         <section> <!-- TODO: add section ID (how do we handle duplicates?) -->
             <xsl:attribute name="ids">c.<xsl:value-of select="ancestor::*/@id"/>-<xsl:call-template name="string-to-ids"/></xsl:attribute>
-            <title><xsl:value-of select="."/></title>
+            <!-- Small workaround for trailing whitespace in titles -->
+            <title><xsl:value-of select="normalize-space(.)"/></title>
             <xsl:apply-templates
 select="parent::*/following-sibling::para[(ref or text()[normalize-space()]) and generate-id(preceding::heading[1])=$heading]|
 parent::*/following-sibling::para[not(ref or text()[normalize-space()])]/*[not(self::heading) and generate-id(preceding::heading[1])=$heading]|
@@ -202,8 +204,15 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
     <xsl:template match="para/para|briefdescription/para">
         <xsl:apply-templates />
     </xsl:template>
-    <xsl:template match="para/text()|bold/text()|emphasis/text()">
-        <xsl:copy/>
+
+    <!-- normal processiong for briefdescription, just go inside -->
+    <xsl:template match="briefdescription">
+        <xsl:apply-templates />
+    </xsl:template>
+
+    <!-- if the briefdescription is a title, then dissolve paragraphs -->
+    <xsl:template match="compounddef/briefdescription/para">
+        <xsl:apply-templates />
     </xsl:template>
 
     <xsl:template match="parameteritem">
