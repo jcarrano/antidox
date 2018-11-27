@@ -155,10 +155,18 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
 
     <xsl:template match="orderedlist">
         <enumerated_list enumtype="arabic" prefix="" suffix=".">
-        <xsl:for-each select="listitem">
-            <list_item><xsl:apply-templates/></list_item>
-        </xsl:for-each>
+            <xsl:apply-templates/>
         </enumerated_list>
+    </xsl:template>
+
+    <xsl:template match="itemizedlist">
+        <bullet_list bullet="-">
+            <xsl:apply-templates/>
+        </bullet_list>
+    </xsl:template>
+
+    <xsl:template match="listitem">
+        <list_item><xsl:apply-templates/></list_item>
     </xsl:template>
 
     <xsl:template match="bold"><strong><xsl:apply-templates/></strong></xsl:template>
