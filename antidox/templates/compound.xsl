@@ -22,6 +22,12 @@
         </xsl:call-template>
     </xsl:template>
 
+    <xsl:template match="/memberdef[@kind='variable']">
+        <xsl:call-template name="memberdef-internal">
+            <xsl:with-param name="role">var</xsl:with-param>
+        </xsl:call-template>
+    </xsl:template>
+
     <xsl:template name="memberdef-internal">
         <xsl:param name = "role" />
         <desc domain="c" noindex="False">
