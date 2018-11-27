@@ -286,6 +286,8 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
          do not expect text as children (e.g <field>)
     -->
     <xsl:template match="text()" />
-    <xsl:template match="type/text()"><xsl:copy/></xsl:template>
+
+    <!-- these are the only elements allowed to produce text -->
+    <xsl:template match="para/text()|bold/text()|emphasis/text()|type/text()"><xsl:copy/></xsl:template>
 
 </xsl:stylesheet>
