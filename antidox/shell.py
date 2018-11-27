@@ -13,6 +13,7 @@ import functools
 import pickle
 import sqlite3
 import timeit
+import re
 
 from lxml import etree as ET
 
@@ -54,6 +55,8 @@ def _any_to_refid(f):
         return f(self, refid)
 
     return _f
+
+KIND_RE = re.compile(r'(?<=\s)Kind\.([A-Z]+)')
 
 class Shell(cmd.Cmd):
     """Interact with the database created by that antidox.doxy module."""
@@ -277,11 +280,16 @@ class Shell(cmd.Cmd):
     def do_shell(self, line):
         """\
         Run an arbitrary SQL query on the database.
+        As a shortcut you can use "!".
+        As a convenience, any string of the form "Kind.XXXXX" will be replaced
+        with the numeric value for that Kind (e.g Kind.GROUP, Kind.UNION).
 
         e.g.: `! SELECT name, id FROM elements WHERE kind in compound_kinds`
         """
+        _line = KIND_RE.sub(lambda m: str(doxy.Kind[m[1]].value), line)
+
         try:
-            self._print_cursor(self.db._db_conn.execute(line))
+            self._print_cursor(self.db._db_conn.execute(_line))
         except sqlite3.Error as e:
             print("Exception while executing SQL:")
             print(e)
