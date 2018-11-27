@@ -109,7 +109,7 @@ class Shell(cmd.Cmd):
         """))
 
     def do_new(self, xml_dir):
-        """
+        """\
         new <doxy xml dir>
         Read an XML directory and create a database. Old DB is discarded."""
         try:
@@ -119,7 +119,7 @@ class Shell(cmd.Cmd):
             print("error: ", "".join(e.args))
 
     def do_dump(self, filename):
-        """
+        """\
         dump <filename>
         Dump DB as pickle"""
         try:
@@ -131,7 +131,7 @@ class Shell(cmd.Cmd):
             print("Done")
 
     def do_restore(self, filename):
-        """
+        """\
         restore <filename>
         Restore pickled DB"""
         try:
@@ -141,14 +141,14 @@ class Shell(cmd.Cmd):
             print("error: ", "".join(e.args))
 
     def do_load_sphinx(self, sphinx_builddir):
-        """
+        """\
         load_sphinx <sphinx_project/_build>
         Load the DB from a pickled Sphinx environment"""
         pass
 
     @_catch
     def do_r(self, target):
-        """
+        """\
         r <target>
         Get the refid of a target.
         """
@@ -156,7 +156,7 @@ class Shell(cmd.Cmd):
 
     @_catch
     def do_t(self, refid):
-        """
+        """\
         r <target>
         Get a target name for a refid.
         """
@@ -164,7 +164,7 @@ class Shell(cmd.Cmd):
 
     @_catch
     def do_n(self, kind_name):
-        """
+        """\
         n [<kind>] <name>
         Get a refid with a name and of a kind (optional).
         """
@@ -187,7 +187,7 @@ class Shell(cmd.Cmd):
     @_catch
     @_any_to_refid
     def do_get(self, refid):
-        """
+        """\
         get r <refid>
         get t target
 
@@ -198,7 +198,7 @@ class Shell(cmd.Cmd):
     @_catch
     @_any_to_refid
     def do_parents(self, refid):
-        """
+        """\
         parents r <refid>
         parents t <target>
 
@@ -209,7 +209,7 @@ class Shell(cmd.Cmd):
     @_catch
     @_any_to_refid
     def do_children(self, refid):
-        """
+        """\
         children r <refid>
         children t <target>
 
@@ -224,7 +224,7 @@ class Shell(cmd.Cmd):
     @_catch
     @_any_to_refid
     def do_show(self, refid):
-        """
+        """\
         show r <refid>
         show t <target>
 
@@ -245,7 +245,7 @@ class Shell(cmd.Cmd):
 
     @_catch
     def do_sty(self, filename):
-        """
+        """\
         sty [template.xsl]
 
         Load a XML template file. Call with no argument to restore the default.
@@ -256,7 +256,7 @@ class Shell(cmd.Cmd):
     @_catch
     @_any_to_refid
     def do_xform(self, refid):
-        """
+        """\
         xform r refid
         xform t target
 
@@ -275,7 +275,8 @@ class Shell(cmd.Cmd):
         print(ET.tostring(transformed, pretty_print=True, encoding='unicode'))
 
     def do_shell(self, line):
-        """Run an arbitrary SQL query on the database.
+        """\
+        Run an arbitrary SQL query on the database.
 
         e.g.: `! SELECT name, id FROM elements WHERE kind in compound_kinds`
         """
