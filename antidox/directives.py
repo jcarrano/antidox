@@ -107,6 +107,13 @@ class Interpreted(PlaceHolder, nodes.Element):
     def run_directive(self, lineno, state, state_machine):
         text = self[0].astext()
 
+        # If we did not parse anything before, language is not set and there is
+        # an exception. I don't know if this is the proper way to fix it, but
+        # I know no better. See the definition of Inliner.interpreted in
+        # docutils to learn more.
+        if not hasattr(state.inliner, "language"):
+            state.inliner.parse("", lineno, state_machine.memo, None)
+
         nodes, messages = state.inliner.interpreted('', text,
                                                 self['role'], lineno)
 
