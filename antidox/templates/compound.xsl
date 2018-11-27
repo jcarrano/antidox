@@ -146,7 +146,7 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         <desc_name><xsl:text> </xsl:text><xsl:value-of select="." /></desc_name>
     </xsl:template>
 
-    <xsl:template match="//ref">
+    <xsl:template match="ref">
         <pending_xref refdomain='c' reftype='any'>
         <xsl:attribute name="reftarget"><xsl:value-of select="@refid"/></xsl:attribute>
         <xsl:value-of select="."/>
