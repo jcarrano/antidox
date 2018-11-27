@@ -196,7 +196,11 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         </reference>
     </xsl:template>
 
-    <!-- TODO: provide special case for RFC urls using the :rfc: role -->
+    <!-- TODO: provide special case for RFC urls using the :rfc: role  -->
+    <xsl:template match="ulink[starts-with(@url, 'http://tools.ietf.org/html/rfc')]">
+        <xsl:variable name="rfc_n_sect" select="substring-after(@url, 'http://tools.ietf.org/html/rfc')"/>
+        <antidox:interpreted role="rfc"><xsl:value-of select="."/><xsl:text> &lt;</xsl:text><xsl:value-of select="$rfc_n_sect"/><xsl:text>&gt;</xsl:text></antidox:interpreted>
+    </xsl:template>
 
     <xsl:template match="para">
         <paragraph><xsl:apply-templates /></paragraph>
