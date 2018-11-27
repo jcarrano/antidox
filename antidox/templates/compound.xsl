@@ -43,6 +43,7 @@
                 <antidox:index/>
             </desc_signature>
             <desc_content>
+                <xsl:apply-templates select="briefdescription"/>
                 <xsl:apply-templates select="initializer"/>
                 <xsl:apply-templates select="detaileddescription"/>
             </desc_content>
