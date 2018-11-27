@@ -201,7 +201,9 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
     <xsl:template match="para">
         <paragraph><xsl:apply-templates /></paragraph>
     </xsl:template>
-    <xsl:template match="para/para|briefdescription/para">
+
+    <!-- Dissolve nested paragraphs -->
+    <xsl:template match="para/para">
         <xsl:apply-templates />
     </xsl:template>
 
