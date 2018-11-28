@@ -206,7 +206,7 @@ class DoxyExtractor(Directive):
         'noindex': directives.flag,
         'hidedef': directives.flag, # TODO: support hidedef
         'hideloc': directives.flag, # TODO: support hideloc
-        'hidedoc': directives.flag, # TODO: support hidedoc
+        'hidedoc': directives.flag,
     }
 
 
@@ -232,20 +232,26 @@ class DoxyExtractor(Directive):
         """Get the DoxyDB object."""
         return self.env.antidox_db
 
-    def _etree_to_sphinx(self, e):
+    def _etree_to_sphinx(self, e, nocontent = False):
         """Convert an element tree to sphinx nodes.
 
         A text node with a antidox:l attribute will be translated using sphinx
         locale features.
+
+        If nocontent is True, then desc_content nodes will be skipped.
         """
         print(self.env)
         curr_element = []
 
-        #print(str(e))
+        et_iter = ET.iterwalk(e, events=("start", "end"))
 
-        for action, elem in ET.iterwalk(e, events=("start", "end")):
+        for action, elem in et_iter:
             #print(action, elem, elem.text)
             if action == "start":
+                if nocontent and elem.tag == 'desc_content':
+                    et_iter.skip_subtree()
+                    continue
+
                 nclass = _get_node(elem.tag)
 
                 text = elem.text or (_(elem.text) if elem.attrib.get("{antidox}l", False)
@@ -295,7 +301,7 @@ class DoxyExtractor(Directive):
 
         my_domain = self.env.domains['doxy']
         rst_etree = my_domain.stylesheet(element_tree)
-        node = self._etree_to_sphinx(rst_etree)
+        node = self._etree_to_sphinx(rst_etree, 'hidedoc' in self.options)
 
         style_fn = my_domain.stylesheet_filename
         if style_fn:

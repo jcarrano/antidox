@@ -17,6 +17,7 @@ This is the unofficial documentation for `fixed_point_arith`_.
 
 .. doxy:c:: MAKE_VEC_VEC_F3
 
+see :doxy:r:`dfrac_base` and :c:type:`whatever_t`
 
 Indices and tables
 ==================
