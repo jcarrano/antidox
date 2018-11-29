@@ -106,7 +106,7 @@
     <!--Small workaround for groups without @brief -->
     <xsl:template match="/compounddef"/>
 
-    <xsl:template match="/compounddef[briefdescription//text()]">
+    <xsl:template match="/compounddef[briefdescription//text() and (@kind = 'group' or @kind = 'file')]">
         <section>
         <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
         <title><xsl:apply-templates select="briefdescription"/></title>
@@ -115,6 +115,22 @@
                                      detaileddescription/para[text()[normalize-space()] and not(preceding::heading or self::heading)]"/>
         <xsl:apply-templates select="detaileddescription/para/heading[@level=1]"/>
         </section>
+    </xsl:template>
+
+    <xsl:template match="/compounddef[@kind = 'struct' or @kind = 'union']">
+        <desc domain="c" noindex="False" desctype="type" objtype="type">
+            <desc_signature first="False">
+                <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
+                <xsl:attribute name="names"><xsl:value-of select="compoundname"/></xsl:attribute>
+                <desc_type><xsl:value-of select="@kind"/></desc_type>
+                <desc_name><xsl:text> </xsl:text><xsl:value-of select="compoundname" /></desc_name>
+                <antidox:index/>
+            </desc_signature>
+            <desc_content>
+                <xsl:apply-templates select="briefdescription"/>
+                <xsl:apply-templates select="detaileddescription"/>
+            </desc_content>
+        </desc>
     </xsl:template>
 
     <!-- doxygen does not encapsulate a header and it's content in a container,
