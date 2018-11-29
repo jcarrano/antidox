@@ -283,7 +283,7 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
     </xsl:template>
 
     <xsl:template match="initializer">
-        <antidox:directive antidox:name="code-block" linenos="">
+        <antidox:directive antidox:definition="true" antidox:name="code-block" linenos="">
         <antidox:directive-argument>c</antidox:directive-argument>
         <antidox:directive-content><xsl:value-of select="." /></antidox:directive-content>
         </antidox:directive>

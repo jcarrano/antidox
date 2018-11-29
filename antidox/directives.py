@@ -180,6 +180,9 @@ class DirectivePlaceholder(PlaceHolder, nodes.Element):
 
         return result
 
+# Generic attributes that are handled by _etree_to_sphinx and should be removed
+# before creating a node.
+_GLOBAL_ATTRIBUTES = {"{antidox}l", "{antidox}definition"}
 
 def _get_node(tag):
     if tag in PseudoElementMeta.tag_map:
@@ -204,7 +207,7 @@ class DoxyExtractor(Directive):
 
     option_spec = {
         'noindex': directives.flag,
-        'hidedef': directives.flag, # TODO: support hidedef
+        'hidedef': directives.flag,
         'hideloc': directives.flag, # TODO: support hideloc
         'hidedoc': directives.flag,
     }
@@ -232,7 +235,7 @@ class DoxyExtractor(Directive):
         """Get the DoxyDB object."""
         return self.env.antidox_db
 
-    def _etree_to_sphinx(self, e, nocontent = False):
+    def _etree_to_sphinx(self, e, nocontent=False, nodef=False):
         """Convert an element tree to sphinx nodes.
 
         A text node with a antidox:l attribute will be translated using sphinx
@@ -244,12 +247,19 @@ class DoxyExtractor(Directive):
         curr_element = []
 
         et_iter = ET.iterwalk(e, events=("start", "end"))
+        skipped = False
 
         for action, elem in et_iter:
             #print(action, elem, elem.text)
             if action == "start":
                 if nocontent and elem.tag == 'desc_content':
                     et_iter.skip_subtree()
+                    skipped = True
+                    continue
+
+                if nodef and elem.attrib.get("{antidox}definition") == 'true':
+                    et_iter.skip_subtree()
+                    skipped = True
                     continue
 
                 nclass = _get_node(elem.tag)
@@ -261,9 +271,8 @@ class DoxyExtractor(Directive):
 
                 # automatically handle list attributes
                 filtered_attrs = {k: (v.split("|") if k in getattr(nclass, "list_attributes", ()) else v)
-                                  for (k, v) in elem.attrib.items()}
-
-                filtered_attrs.pop("{antidox}l", False)
+                                  for (k, v) in elem.attrib.items()
+                                  if not k in _GLOBAL_ATTRIBUTES}
 
                 node = nclass(arg, **filtered_attrs)
                 if not isinstance(node, nodes.Text) and elem.text:
@@ -272,6 +281,10 @@ class DoxyExtractor(Directive):
                 curr_element.append(node)
                 curr_element = node
             else:
+                if skipped == True:
+                    skipped = False
+                    continue
+
                 if isinstance(curr_element, PlaceHolder):
                     curr_element.replace_placeholder(self.lineno, self.state, self.state_machine)
 
@@ -301,7 +314,9 @@ class DoxyExtractor(Directive):
 
         my_domain = self.env.domains['doxy']
         rst_etree = my_domain.stylesheet(element_tree)
-        node = self._etree_to_sphinx(rst_etree, 'hidedoc' in self.options)
+        node = self._etree_to_sphinx(rst_etree,
+                                     nocontent = 'hidedoc' in self.options,
+                                     nodef = 'hidedef' in self.options)
 
         style_fn = my_domain.stylesheet_filename
         if style_fn:

@@ -197,6 +197,12 @@ antidoc-specific extensions
 When set to ``"true"`` in a Text-derived element, the text is run through
 Sphinx's locale function.
 
+``antidox:definition`` (attribute)
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When set to ``"true"`` in any element it indicates that it is a definition and
+should be skipped when the ":hidedef:" option is given.
+
 ``antidox:directive``
 ~~~~~~~~~~~~~~~~~~~~~
 
