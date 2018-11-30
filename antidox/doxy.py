@@ -458,11 +458,8 @@ class DoxyDB:
 
     def _load_all_inner(self):
         """Load the XML file for each compound and assemble the hierarchy."""
-        _in = Kind.compounds()
         cur = self._db_conn.execute(
-                "SELECT prefix, id FROM elements WHERE kind in (%s)" % ",".join(["?"]*len(_in)),
-                        _in
-                        )
+                "SELECT prefix, id FROM elements WHERE kind in compound_kinds")
 
         for refid in cur:
             fn = os.path.join(self._xml_dir, "{}.xml".format(RefId(*refid)))
