@@ -8,12 +8,15 @@
 
 """
 
+import re
+
 from lxml import etree as ET
 from docutils import nodes
 from docutils.parsers.rst import Directive, directives, DirectiveError
-from sphinx.locale import _
+from sphinx.locale import _ as _locale
 from sphinx.domains import Domain
 from sphinx import addnodes
+import sphinx.errors
 
 from . import doxy
 from .xtransform import get_stylesheet
@@ -38,6 +41,7 @@ class PseudoElementMeta(type):
 
 class PseudoElement(metaclass=PseudoElementMeta):
     TAG_NAME = None
+
 
 class PlaceHolder(PseudoElement):
     """Placeholder elements must be replaced before exiting when traversing the
@@ -95,10 +99,11 @@ class Index(PlaceHolder, nodes.Inline, nodes.TextElement):
                 state_machine.reporter.warning(
                     'duplicate %s object description of %s, ' % (domain, sref) +
                     'other instance in ' + env.doc2path(inv[sref][0]),
-                    line=lineno) # FIXME
+                    line=lineno)  # FIXME
             inv[sref] = (env.docname, self.guess_objtype())
 
         return super().replace_placeholder(lineno, state, state_machine)
+
 
 class Interpreted(PlaceHolder, nodes.Element):
     TAG_NAME = "{antidox}interpreted"
@@ -115,10 +120,11 @@ class Interpreted(PlaceHolder, nodes.Element):
             state.inliner.parse("", lineno, state_machine.memo, None)
 
         nodes, messages = state.inliner.interpreted('', text,
-                                                self['role'], lineno)
+                                                    self['role'], lineno)
 
-        #fixme: do somethin with messages
+        # fixme: do somethin with messages
         return nodes
+
 
 class DirectiveArg(PseudoElement, nodes.Text):
     TAG_NAME = "{antidox}directive-argument"
@@ -131,8 +137,8 @@ class DirectiveContent(PseudoElement, nodes.Text):
 
 
 class DirectivePlaceholder(PlaceHolder, nodes.Element):
-    """A directive is specified using <antidox:directive>, <antidox:directive-argument>
-    <antidox:directive-content> tags.
+    """A directive is specified using <antidox:directive>,
+    <antidox:directive-argument>, <antidox:directive-content> tags.
 
     Each <antidox:directive> can contain zero or more <antidox:argument> and
     an optional content.
@@ -158,13 +164,14 @@ class DirectivePlaceholder(PlaceHolder, nodes.Element):
 
         raw_options = self.attlist()
         options = {k: directive_class.option_spec[k](v) for k, v in raw_options
-                      if not k.startswith("{antidox}")}
+                   if not k.startswith("{antidox}")}
 
         arguments = [n.astext() for n in self.children if n.tagname == "argument"]
         content = [n.astext() for n in self.children if n.tagname == "content"]
 
-        content_offset = 0
-        block_text = ''
+        # what about this?
+        # content_offset = 0
+        # block_text = ''
 
         directive_instance = directive_class(
                             name, arguments, options, content, lineno,
@@ -180,9 +187,11 @@ class DirectivePlaceholder(PlaceHolder, nodes.Element):
 
         return result
 
+
 # Generic attributes that are handled by _etree_to_sphinx and should be removed
 # before creating a node.
 _GLOBAL_ATTRIBUTES = {"{antidox}l", "{antidox}definition"}
+
 
 def _get_node(tag):
     if tag in PseudoElementMeta.tag_map:
@@ -193,9 +202,22 @@ def _get_node(tag):
     except AttributeError:
         return getattr(nodes, tag)
 
+
+_ENTITY_RE = re.compile(r"(?:(?P<kind>\w+)?\[(?P<name>\w+)\])|(?P<target>[^[]\S*)")
+
+
+class InvalidEntity(sphinx.errors.SphinxError):
+    pass
+
+
 class DoxyExtractor(Directive):
-    """Create a Sphinx document for a Doxygen entity. This class does not
-    provide a run method. Subclass it to implement it.
+    """
+    Auto-document any doxygen entity:
+
+    - C language elements are specified as a target string (as in
+      antidox.doxy.Target.
+    - Arbitrary doxygen entities can be specified as kind[name], where kind is
+      optional (as long as there is no ambiguity.
 
     Options
     -------
@@ -205,13 +227,17 @@ class DoxyExtractor(Directive):
     hidedoc: hide doxygen's documentation.
     """
 
+    # TODO: do something with content
+    has_content = True
+    required_arguments = 1
+    optional_arguments = 0
+
     option_spec = {
-        'noindex': directives.flag,
+        'noindex': directives.flag,  # TODO: support noindex
         'hidedef': directives.flag,
-        'hideloc': directives.flag, # TODO: support hideloc
+        'hideloc': directives.flag,  # TODO: support hideloc
         'hidedoc': directives.flag,
     }
-
 
     def add_target_and_index(self, name, sig, signode):
         # type: (Any, unicode, addnodes.desc_signature) -> None
@@ -224,6 +250,8 @@ class DoxyExtractor(Directive):
         name: refid for the object.
         sig: Signature. It is parsed as a doxy.Target string.
         """
+        # FIXME: what is this supposed to do?
+
         return  # do nothing by default
 
     @property
@@ -250,7 +278,7 @@ class DoxyExtractor(Directive):
         skipped = False
 
         for action, elem in et_iter:
-            #print(action, elem, elem.text)
+            # print(action, elem, elem.text)
             if action == "start":
                 if nocontent and elem.tag == 'desc_content':
                     et_iter.skip_subtree()
@@ -264,7 +292,8 @@ class DoxyExtractor(Directive):
 
                 nclass = _get_node(elem.tag)
 
-                text = elem.text or (_(elem.text) if elem.attrib.get("{antidox}l", False)
+                text = elem.text or (_locale(elem.text)
+                                     if elem.attrib.get("{antidox}l", False)
                                      else elem.text)
 
                 arg = text if issubclass(nclass, nodes.Text) else ''
@@ -272,7 +301,7 @@ class DoxyExtractor(Directive):
                 # automatically handle list attributes
                 filtered_attrs = {k: (v.split("|") if k in getattr(nclass, "list_attributes", ()) else v)
                                   for (k, v) in elem.attrib.items()
-                                  if not k in _GLOBAL_ATTRIBUTES}
+                                  if k not in _GLOBAL_ATTRIBUTES}
 
                 node = nclass(arg, **filtered_attrs)
                 if not isinstance(node, nodes.Text) and elem.text:
@@ -281,12 +310,13 @@ class DoxyExtractor(Directive):
                 curr_element.append(node)
                 curr_element = node
             else:
-                if skipped == True:
+                if skipped:
                     skipped = False
                     continue
 
                 if isinstance(curr_element, PlaceHolder):
-                    curr_element.replace_placeholder(self.lineno, self.state, self.state_machine)
+                    curr_element.replace_placeholder(self.lineno, self.state,
+                                                     self.state_machine)
 
                 if curr_element.parent is not None:
                     curr_element = curr_element.parent
@@ -295,7 +325,6 @@ class DoxyExtractor(Directive):
                     curr_element.append(nodes.Text(elem.tail, elem.tail))
 
         return curr_element
-
 
     def run_reference(self, ref):
         """Convert the doxygen XML of a reference into Sphinx nodes.
@@ -315,8 +344,8 @@ class DoxyExtractor(Directive):
         my_domain = self.env.domains['doxy']
         rst_etree = my_domain.stylesheet(element_tree)
         node = self._etree_to_sphinx(rst_etree,
-                                     nocontent = 'hidedoc' in self.options,
-                                     nodef = 'hidedef' in self.options)
+                                     nocontent='hidedoc' in self.options,
+                                     nodef='hidedef' in self.options)
 
         style_fn = my_domain.stylesheet_filename
         if style_fn:
@@ -324,43 +353,23 @@ class DoxyExtractor(Directive):
 
         return [node]
 
-class CTarget(DoxyExtractor):
-    """Auto-document a C language element specified as a target string"""
-
-    # TODO: do something with content
-    has_content = True
-    required_arguments = 1
-    optional_arguments = 0
-
     def run(self):
-        target = self.arguments[0]
-        ref = self.db.resolve_target(target)
+        target_spec = _ENTITY_RE.fullmatch(self.arguments[0])
 
-        return self.run_reference(ref)
+        if target_spec is None:
+            raise InvalidEntity("Cannot parse entity: %s" % self.arguments[0])
 
-class DoxyEntity(DoxyExtractor):
-    """Auto-document any doxygen entity, given as <name> or <kind> <name>."""
+        target = target_spec['target']
 
-    # TODO: do something with content
-    has_content = True
-    required_arguments = 1
-    optional_arguments = 1
-
-    def run(self):
-        try:
-            _kind, name = self.arguments[:2]
-        except ValueError:
-            kind = None
-            name = self.arguments[0]
+        if target:
+            ref = self.db.resolve_target(target)
         else:
-            kind = doxy.Kind.from_attr(_kind)
-
-        ref = self.db.resolve_name(kind, name)
+            kind_s = target_spec['kind']
+            ref = self.db.resolve_name(kind_s and doxy.Kind.from_attr(kind_s),
+                                       target_spec['name'])
 
         return self.run_reference(ref)
 
-# save this for the future:
-#     _ENTITY_RE = re.compile(r"(?:(?P<kind>\w+)\[(?P<name1>\w+)\])|(?P<name2>\w+)")
 
 def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """Create a cross reference for a doxygen object, given a human-readable
@@ -401,7 +410,7 @@ class DoxyDomain(Domain):
     name = 'doxy'
     label = "Doxygen-documented entities"
 
-    directives = {'c': CTarget, 'e': DoxyEntity}
+    directives = {'c': DoxyExtractor}
     roles = {'r': target_role}
 
     def __init__(self, env):

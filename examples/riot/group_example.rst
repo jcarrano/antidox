@@ -1,2 +1,2 @@
 
-.. doxy:e:: net_gnrc
+.. doxy:c:: [net_gnrc]
