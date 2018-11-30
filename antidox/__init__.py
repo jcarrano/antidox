@@ -6,8 +6,6 @@
     functionality.
 """
 
-from sphinx.errors import ExtensionError
-
 from . import doxy
 from . import directives
 
@@ -23,16 +21,14 @@ def load_db(app, env, docnames):
 
 
 def setup(app):
-    from docutils.parsers.rst import roles
-
     app.add_config_value("antidox_doxy_xml_dir", "", 'env')
     app.add_config_value("antidox_xml_stylesheet", "", 'env')
 
     # TODO: provide support for multiple Doxygen projects
     app.connect("env-before-read-docs", load_db)
 
-    #app.add_directive('doxy', directives.CAuto)
-    #roles.register_canonical_role('doxyt', directives.target_role)
+    # app.add_directive('doxy', directives.CAuto)
+    # roles.register_canonical_role('doxyt', directives.target_role)
     app.add_domain(directives.DoxyDomain)
 
     return {'version': '0.1.1', 'parallel_read_safe': True}

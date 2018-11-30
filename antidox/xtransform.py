@@ -14,8 +14,10 @@ from lxml import etree as ET
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
+
 def _get_compound_xsl_text():
     return get_data(__package__, os.path.join("templates", "compound.xsl"))
+
 
 class Resolver(ET.Resolver):
     """Resolve the basic stylesheet as "antidox:compound".
@@ -28,7 +30,7 @@ class Resolver(ET.Resolver):
             return self.resolve_string(_get_compound_xsl_text(), context)
 
 
-def get_stylesheet(stylesheet_filename = None):
+def get_stylesheet(stylesheet_filename=None):
     """Get a XSLT stylesheet.
 
     If stylesheet_filename is not specified, the default sheet will be returned.

@@ -27,6 +27,7 @@ __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
 # TODO: proper logging of warnings
 
+
 @enum.unique
 class Kind(enum.Enum):
     """Combination of Doxygen's "CompoundKind" and "MemberKind".
@@ -65,14 +66,14 @@ class Kind(enum.Enum):
         own files.
         """
         return tuple(cls[k] for k in ("CLASS", "STRUCT", "UNION", "EXCEPTION",
-                                      "FILE", "NAMESPACE", "GROUP","PAGE", "DIR"))
+                                      "FILE", "NAMESPACE", "GROUP", "PAGE", "DIR"))
 
     @classmethod
     def synthetic_compounds(cls):
         """Return a tuple containing all kinds that are compounds and are defined
         by the user and not by the language syntax"""
 
-        return tuple(cls[k] for k in ("GROUP","PAGE", "DIR"))
+        return tuple(cls[k] for k in ("GROUP", "PAGE", "DIR"))
 
     @classmethod
     def tag_supported(cls, attr):
@@ -86,9 +87,11 @@ class Kind(enum.Enum):
             return cls[attr.upper()]
         except KeyError as e:
             # TODO: catch this exception and issue a warning
-            raise NotImplementedError("kind=%s not supported"%attr) from e
+            raise NotImplementedError("kind=%s not supported" % attr) from e
+
 
 sqlite3.register_converter("Kind", lambda x: Kind(int(x)))
+
 
 def _ez_iterparse(filename, events=()):
     """Wrapper around ElementTree.iterparse() that clears away elements after
@@ -117,6 +120,7 @@ class DoxyFormatError(Exception):
     """Error for wrongly formatted doxygen files"""
     pass
 
+
 class ConsistencyError(DoxyFormatError):
     """Raised when any of the assumptions made about the structure of the
     Doxygen XML files is violated. For example, if more than one file contains
@@ -126,18 +130,22 @@ class ConsistencyError(DoxyFormatError):
     """
     pass
 
+
 class RefError(Exception):
     """Base class for errors related to refids and targets"""
     pass
+
 
 class InvalidTarget(RefError):
     """Raised when an invalid target (one that resolved to zero entities) is
     encountered"""
     pass
 
+
 class AmbiguousTarget(RefError):
     """Raised when a target that matches more than one entity is encountered"""
     pass
+
 
 # Reverse engineered Doxygen refid:
 #   "_" is a escape character. A literal "_" is represented by "__". "_1" is
@@ -147,7 +155,9 @@ class AmbiguousTarget(RefError):
 #   contain ":"
 _refid_re = re.compile(r"(?:((?:\w|-)+)_1)?((?:(?:[A-Za-z0-9-]+)|(?:_[^1]))+)")
 
+
 _RefId = namedtuple("_RefId", "prefix id_")
+
 
 class RefId(_RefId):
     """Reverse engineered Doxygen refid.
@@ -174,7 +184,7 @@ class RefId(_RefId):
 
             match = _refid_re.fullmatch(s)
             if not match:
-                raise DoxyFormatError("Cannot parse refid: %s"%s)
+                raise DoxyFormatError("Cannot parse refid: %s" % s)
 
             p, h = match.groups()
 
@@ -193,7 +203,9 @@ class RefId(_RefId):
 # of an empty file path and the filename as the name.
 _target_re = re.compile(r"(?:((?:[^/]+/)*[^/]+\.[^/:.]+)::)?(.+)")
 
+
 _Target = namedtuple("_Target", "path name")
+
 
 class Target(_Target):
     """Tuple uniquely identifying an entity.
@@ -224,7 +236,7 @@ class Target(_Target):
 
             match = _target_re.fullmatch(args[0])
             if not match:
-                raise ValueError("Malformed target string: %s"%args[0])
+                raise ValueError("Malformed target string: %s" % args[0])
             path, name = match.groups()
         else:
             path, name = args
@@ -265,6 +277,7 @@ def _match_path(p1, p2):
 
     return part1[-minlen:] == part2[-minlen:]
 
+
 def _barename(n):
     """Strip the namespace part of a name."""
     return n.split('::')[-1]
@@ -278,6 +291,7 @@ def _refid_str(f):
         return f(self, RefId(refid), *args, **kwargs)
 
     return _f
+
 
 def _target_str(f):
     """Decorator to make a function that accepts a target also accept the string"""
@@ -370,7 +384,9 @@ class DoxyDB:
 
         # Example:
         # <compound refid="fxos8700__regs_8h" kind="file"><name>fxos8700_regs.h</name>
-        #   <member refid="fxos8700__regs_8h_1abd2eb1f9d6401758c261450bf6f78280" kind="define"><name>FXOS8700_REG_STATUS</name></member>
+        #   <member refid="fxos8700__regs_8h_1abd2eb1f9d6401758c261450bf6f78280" kind="define">
+        #        <name>FXOS8700_REG_STATUS</name>
+        #   </member>
         #  ....
         # An entry is added to the elements table:
         #   prefix=fxos8700__regs_8h, id=abd2eb1f9d6401758c261450bf6f78280,
@@ -400,8 +416,7 @@ class DoxyDB:
 
         _syn_compounds = Kind.synthetic_compounds()
         self._db_conn.executemany("INSERT INTO syn_compound_kinds VALUES (?)",
-                                 ((x,) for x in _syn_compounds))
-
+                                  ((x,) for x in _syn_compounds))
 
     def _read_index(self, indexfile):
         """Parse index.xml and insert the elements in the database."""
@@ -419,7 +434,7 @@ class DoxyDB:
                     p_refid = RefId(elem.getparent().attrib["refid"])
                 else:
                     raise DoxyFormatError("Unknown tag in index: %s"
-                                          %elem.tag)
+                                          % elem.tag)
 
                 this_refid = RefId(elem.attrib["refid"])
                 kind = Kind.from_attr(elem.attrib["kind"])
@@ -427,33 +442,31 @@ class DoxyDB:
                     name = elem.attrib["name"]
                 except KeyError as e:
                     raise DoxyFormatError("Element definition without a name: %s"
-                                          %elem.attrib["refid"])
+                                          % elem.attrib["refid"]) from e
 
                 try:
                     self._db_conn.execute("INSERT INTO elements values "
-                                        "(?, ?, ?, ?)",
-                                        this_refid + (name, kind))
+                                          "(?, ?, ?, ?)",
+                                          this_refid + (name, kind))
                 except sqlite3.IntegrityError:
-                    print(this_refid, name, kind) # FIXME: replace by proper logging
+                    print(this_refid, name, kind)  # FIXME: replace by proper logging
                     raise
 
                 if p_refid is not None:
                     self._db_conn.execute("INSERT INTO hierarchy values (?, ?, ?, ?)",
-                                         this_refid + p_refid)
-
+                                          this_refid + p_refid)
 
     def _load_all_inner(self):
         """Load the XML file for each compound and assemble the hierarchy."""
         _in = Kind.compounds()
         cur = self._db_conn.execute(
-                "SELECT prefix, id FROM elements WHERE kind in (%s)"%",".join(["?"]*len(_in)),
+                "SELECT prefix, id FROM elements WHERE kind in (%s)" % ",".join(["?"]*len(_in)),
                         _in
                         )
 
         for refid in cur:
             fn = os.path.join(self._xml_dir, "{}.xml".format(RefId(*refid)))
             self._read_inner(fn)
-
 
     def _read_inner(self, compoundfile):
         """Gather all the inner elements for compounds in a file."""
@@ -468,7 +481,7 @@ class DoxyDB:
                 p_refid = RefId(elem.attrib["id"])
             else:
                 s, inner, innerkind = elem.tag.partition("inner")
-                if s: # the tag does not start with "inner"
+                if s:  # the tag does not start with "inner"
                     continue
 
                 if not Kind.tag_supported(innerkind):
@@ -478,7 +491,6 @@ class DoxyDB:
 
                 self._db_conn.execute("INSERT INTO hierarchy values (?, ?, ?, ?)",
                                       this_refid + p_refid)
-
 
     # TODO: this may need caching???
     @_refid_str
@@ -532,7 +544,7 @@ class DoxyDB:
 
         r = [(), ()]
         for iscompound, g in itertools.groupby(cur, lambda x: x[2]):
-            r[iscompound] = [RefId(p, i) for p,i,k in g]
+            r[iscompound] = [RefId(p, i) for p, i, k in g]
 
         return r
 
@@ -572,7 +584,7 @@ class DoxyDB:
         nodes = list(cur)
 
         if not len(nodes) > 0:
-            raise InvalidTarget("No such refid: %s"%str(refid))
+            raise InvalidTarget("No such refid: %s" % str(refid))
 
         if not nodes[-1]['kind'] == Kind.FILE:
             raise ConsistencyError("Root node is not a file")
@@ -609,7 +621,7 @@ class DoxyDB:
         try:
             result = list(cur)[0]
         except IndexError as e:
-            raise RefError("No such refid: %s"%str(refid)) from e
+            raise RefError("No such refid: %s" % str(refid)) from e
 
         return result
 
@@ -621,13 +633,13 @@ class DoxyDB:
         r = list(cur)
 
         if not r:
-            raise InvalidTarget("Cannot resolve target: %s"%str(target))
+            raise InvalidTarget("Cannot resolve target: %s" % str(target))
         # FIXME: this is failing for paths that are a prefix of another one.
         if len(r) > 1:
-            raise AmbiguousTarget("Target (%s) resolves to more than one element"%str(target))
+            raise AmbiguousTarget("Target (%s) resolves to more than one element"
+                                  % str(target))
 
         return RefId(*r[0])
-
 
     @_target_str
     def resolve_target(self, target):
@@ -681,7 +693,7 @@ class DoxyDB:
             )
         SELECT prefix, id FROM follow
             WHERE level = ?
-        """%",".join("(%s, ?)"%i for i in range(ncompo)),
+        """ % ",".join("(%s, ?)" % i for i in range(ncompo)),
             components + (Kind.FILE, path_filter, accept_level))
 
         return self._cur_to_refid(cur, target)
@@ -694,15 +706,14 @@ class DoxyDB:
         Less than one, and InvalidTarget.
         """
 
-        _kind = kind if kind else "*"
         if kind:
             cur = self._db_conn.execute(
-            """SELECT prefix, id FROM elements WHERE kind = ? AND name = ?""",
-            (kind, name))
+              """SELECT prefix, id FROM elements WHERE kind = ? AND name = ?""",
+              (kind, name))
         else:
             cur = self._db_conn.execute(
-            """SELECT prefix, id FROM elements WHERE name = ?""",
-            (name,))
+              """SELECT prefix, id FROM elements WHERE name = ?""",
+              (name,))
 
         return self._cur_to_refid(cur, (kind, name))
 
@@ -721,7 +732,7 @@ class DoxyDB:
             try:
                 definition_file_base = next(self.find_parents(refid))
             except StopIteration as e:
-                raise ConsistencyError("Cannot find compound containing %s"%refid) from e
+                raise ConsistencyError("Cannot find compound containing %s" % refid) from e
 
             xpathq = '//memberdef[@id=$id]'
 
@@ -777,8 +788,7 @@ class DoxyDB:
             return "member" if parent_is_struct else "var"
 
         # FIXME: is this correct?
-        raise ValueError("No c desctype for %s"%kind)
-
+        raise ValueError("No c desctype for %s" % kind)
 
     # TODO: hierarchy walker (sort of os.walkdir with compounds as dirs and members
     #       as files???????)

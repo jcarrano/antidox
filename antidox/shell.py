@@ -23,6 +23,7 @@ from .xtransform import get_stylesheet
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
+
 def _catch(f):
     """Wrap a function so that it catches DB errors"""
     @functools.wraps(f)
@@ -33,6 +34,7 @@ def _catch(f):
             print(e.args[0])
 
     return _f
+
 
 def _any_to_refid(f):
     """Transform a method that takes a refid into one that takes a
@@ -50,13 +52,16 @@ def _any_to_refid(f):
             print(f.__doc__)
             return
 
-        refid = refid_or_target if type == 'r' else self.db.resolve_target(refid_or_target)
+        refid = (refid_or_target if type == 'r'
+                 else self.db.resolve_target(refid_or_target))
 
         return f(self, refid)
 
     return _f
 
+
 KIND_RE = re.compile(r'(?<=\s)Kind\.([A-Z]+)')
+
 
 class Shell(cmd.Cmd):
     """Interact with the database created by that antidox.doxy module."""
@@ -116,8 +121,8 @@ class Shell(cmd.Cmd):
         new <doxy xml dir>
         Read an XML directory and create a database. Old DB is discarded."""
         try:
-            _f = lambda : doxy.DoxyDB(xml_dir)
-            print("DB loaded in %f seconds"%timeit.timeit("self.db=_f()", number=1, globals=locals()))
+            _f = lambda: doxy.DoxyDB(xml_dir)
+            print("DB loaded in %f seconds" % timeit.timeit("self.db=_f()", number=1, globals=locals()))
         except Exception as e:
             print("error: ", "".join(e.args))
 
@@ -304,12 +309,14 @@ class Shell(cmd.Cmd):
 
 def main():
     parser = argparse.ArgumentParser(description="antidox database debugger",
-        epilog = """Use the -e option to start the application with a database already open:
+                                     epilog="""\
+    Use the -e option to start the application with a database already open:
     shell.py -e "new path/to/xml" OR shell.py -e "restore saved_db.pickle"
     """)
 
     parser.add_argument('-e', action="append",
-                        help="Run command as if it was given in the terminal. Can be specified multiple times.")
+                        help="Run command as if it was given in the terminal. "
+                             "Can be specified multiple times.")
 
     ns = parser.parse_args()
 
@@ -321,6 +328,6 @@ def main():
     else:
         app.cmdloop()
 
+
 if __name__ == "__main__":
     main()
-
