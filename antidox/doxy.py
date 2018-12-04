@@ -668,8 +668,10 @@ class DoxyDB:
         path_filter = target.path
 
         # The call to barename is a kind of hack. It is necessary because
-        # doxygen stores some names with namespaces and some without.
-
+        #      doxygen stores some names with namespaces and some without.
+        # The DISTINCT keyword is there because sometimes the search returns
+        #      the same entity multiple times. I think it may only be because of
+        #      some bug in doxygen (further investigation is needed.)
         cur = self._db_conn.execute(
         """WITH RECURSIVE
             components (level, compo) AS (
@@ -689,7 +691,7 @@ class DoxyDB:
                         ON f.level = c.level
                 WHERE barename(e.name) = c.compo
             )
-        SELECT prefix, id FROM follow
+        SELECT DISTINCT prefix, id FROM follow
             WHERE level = ?
         """ % ",".join("(%s, ?)" % i for i in range(ncompo)),
             components + (Kind.FILE, path_filter, accept_level))
