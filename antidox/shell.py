@@ -31,7 +31,7 @@ def _catch(f):
         try:
             return f(self, line)
         except doxy.RefError as e:
-            print(e.args[0])
+            print("\n".join(str(a) for a in e.args))
 
     return _f
 

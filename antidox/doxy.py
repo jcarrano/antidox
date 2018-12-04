@@ -143,7 +143,8 @@ class InvalidTarget(RefError):
 
 
 class AmbiguousTarget(RefError):
-    """Raised when a target that matches more than one entity is encountered"""
+    """Raised when a target that matches more than one entity is encountered.
+    The second argument to the constructor should be a list of all matches."""
     pass
 
 
@@ -634,7 +635,7 @@ class DoxyDB:
         # FIXME: this is failing for paths that are a prefix of another one.
         if len(r) > 1:
             raise AmbiguousTarget("Target (%s) resolves to more than one element"
-                                  % str(target))
+                                  % str(target), [RefId(*row) for row in r])
 
         return RefId(*r[0])
 
