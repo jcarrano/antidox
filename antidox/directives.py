@@ -375,6 +375,8 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """Create a cross reference for a doxygen object, given a human-readable
     target."""
 
+    # FIXME: support kind[name] syntax
+
     db = inliner.document.settings.env.antidox_db
     try:
         ref = db.resolve_target(text)

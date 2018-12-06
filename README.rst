@@ -59,22 +59,70 @@ Directives, roles and domains
 
 Directives and roles are contained in an `doxy` domain.
 
-c *<target>*
-  This directive inserts the documentation corresponding to the given target.
-  There is nothing hardcoded about the reST nodes that get created. Everything,
-  including index and cross reference creation is controlled by the XSL template.
+.. rst:directive:: c
 
-r *<target>*
+  This directive inserts the documentation corresponding to a doxygen-documented
+  entity. The entity is specified either as a target string::
+
+    .. doxy:c:: file.h::identifier
+
+  or, if it is not a C-language element (for example, a Doxygen group) by using
+  the syntax::
+
+    .. doxy:c:: kind[name]
+
+  Where ``kind`` is optional- if it is not given, then ``name`` should be unique.
+
+  There is nothing hardcoded about the reST nodes that get created. Everything,
+  including index and cross reference creation is controlled by the XSL template,
+  see `Customization`_.
+
+  The following options are accepted:
+
+  ``hidedef``
+    For macros and variables, do not show the definition.
+
+  ``hideloc``
+    Do not print the location in the source code of the definition (not
+    currently implemented.)
+
+  ``noindex``
+    Do not add index entries (not currently implemented.)
+
+  ``hidedoc``
+    Do not render the text of the documentation. This is useful if you want
+    to replace the description with your own text in the reST source.
+
+  To be implemented:
+
+  ``children``
+    Include documentation for the given child elements. This option may be empty,
+    in which case the default is to include all children whose `kind` is
+    different from the current element.
+
+  ``no-children``
+    Exclude the selected children. By default if this option is empty, it forces
+    all children to be excluded.
+
+  Children are normally specified by name. The default inclusion behavior can be
+  overridden by responding the `antidox-include-children`_ event.
+
+
+.. rst:directive:: r
+
   Insert a cross reference to the given target's documentation.
 
 Configuration variables
 -----------------------
 
-antidox_doxy_xml_dir
+.. confval:: antidox_doxy_xml_dir
+
   Directory where the doxygen XML files are to be found.
 
-antidox_xml_stylesheet
-  (Optional) Specify an alternative stylesheet (see `Customization`_.)
+.. confval:: antidox_xml_stylesheet
+
+  (Optional) Specify an alternative stylesheet. See `Customization`_ for
+  instructions on how to define your own stylesheet.
 
 Customization
 -------------
@@ -85,14 +133,45 @@ Doxygen constructs by supplying an alternate stylesheet through the
 `antidox_xml_stylesheet` parameter.
 
 A custom stylesheet can inherit from (or include) the default one by using an
-`import` statement. The most basic stylesheet being
-
-::
+`import` statement. A basic stylesheet can be::
 
   <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:import href="antidox:compound"/>
   </xsl:stylesheet>
 
+Because the XML templating system is designed so as to make it possible to apply
+the transforms offline with standard tools (see `Design philosophy`_), there is
+no access to the Doxygen database from within templates. This means that it is
+not possible to query the relationships (parent, children, etc) of the element
+being rendered from within the XSL template. The only information available is
+that which is exposed by Doxygen's XML. That this information is available is
+considered by the author of this extension to be a design mistake, because it
+is a consequence of duplicate data all across Doxygen-generated documents.
+Therefore, this information is not used in the built-in templates, and it is
+recommended that user-supplied templates do not either. Instead, a more flexible
+mechanism for including the documentation of child elements is provided in the
+form of events- see the next section.
+
+Events
+------
+
+.. note::
+
+  This functionality is currently under development.
+
+.. event:: antidox-include-children (app, this, options)
+
+  Emitted once for every :rst:dir:`c` directive, to determine which child
+  elements should be included. antidox will select the first non-``None`` value.
+
+  Handlers should return either ``None``, to fall back to the default behavior,
+  or list of tuples of the form ``(refid, options)``. In the latter case,
+  ``refid`` should be a doxy.RefId object and options a dictionary which will
+  set the options for the nested :rst:dir:`doxy:c` directive.
+
+  :param app: the Sphinx application object
+  :param this: refid for the object currently being documented.
+  :param options: dictionary with the options given to the directive.
 
 
 Implemetation Overview
@@ -198,7 +277,7 @@ When set to ``"true"`` in a Text-derived element, the text is run through
 Sphinx's locale function.
 
 ``antidox:definition`` (attribute)
-~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When set to ``"true"`` in any element it indicates that it is a definition and
 should be skipped when the ":hidedef:" option is given.
@@ -222,7 +301,7 @@ Placed inside `antidox:directive`_, its TEXT is translated to arguments for that
 directive.
 
 ``antidox:directive-content``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This element's TEXT is the content of the containing directive.
 
@@ -244,6 +323,7 @@ TODO
 * Document custom XML nodes (antidox namespace).
 * Complete docs.
 * Some important doxygen constructs are missing.
+* Add glossary.
 
 .. _lxml: https://lxml.de/
 .. _sqlite3: https://docs.python.org/3/library/sqlite3.html
