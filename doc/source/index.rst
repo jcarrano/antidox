@@ -14,6 +14,7 @@ Welcome to antidox's documentation!
    guide
    templating
    internals
+   default-template
 
 .. todo::
 

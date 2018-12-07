@@ -64,6 +64,46 @@ reason, there should not be any custom functions defined and no stylesheet
 parameters that depend on the plugin to set them.
 
 
+Quickstart
+----------
+
+First, you need to configure Doxygen to produce XML docs, edit your
+``doxyfile``::
+
+  GENERATE_XML = yes
+
+If your project is huge, consider setting ``XML_PROGRAMLISTING = NO`` to reduce
+the size of the generated files.
+
+Enable the ``antidox`` plugin in your Sphinx project's ``conf.py`` and tell it
+where to find the XML file::
+
+  extensions = [
+    # whatever extensions you have enabled
+    'antidox',
+  ]
+
+  # ..... other extension's stuff ......
+
+  # Configure antidox
+  antidox_doxy_xml_dir = "path/to/doxygen/xml"
+
+Now you can use the directives in a reST document. For example, to include the
+documentation of function ``foo()`` defined in ``bar.h`` write::
+
+  .. doxy:c:: bar.h::foo
+
+You can later refer to it using the :rst:role:`doxy:r` role. You can also
+include documentation for an entire file, or for a Doxygen group::
+
+  .. doxy:c:: bar.h::*
+
+  .. doxy:c:: group[name_of_the_group]
+
+On huge projects, the fist time you run ``sphinx-build`` it may take a some time
+to parse all the XML files. Subsequent runs should go faster as long as the
+XML files are not touched.
+
 Note: currently under development
 ---------------------------------
 

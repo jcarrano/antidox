@@ -31,7 +31,7 @@ If the element does not map to a Text-derived node and there is a TEXT element
 inside, a new Text node is created. Otherwise the text is used to create the
 node.
 
-antidoc-specific extensions
+antidox-specific extensions
 ---------------------------
 
 ``antidox:l`` (attribute)

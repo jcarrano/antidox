@@ -51,7 +51,7 @@ Directives, roles and domains
 
 Directives and roles are contained in an `doxy` domain.
 
-.. rst:directive:: c
+.. rst:directive:: doxy:c
 
   This directive inserts the documentation corresponding to a doxygen-documented
   entity. The entity is specified either as a target string::
@@ -97,10 +97,10 @@ Directives and roles are contained in an `doxy` domain.
     all children to be excluded.
 
   Children are normally specified by name. The default inclusion behavior can be
-  overridden by responding the `antidox-include-children`_ event.
+  overridden by responding the :event:`antidox-include-children` event.
 
 
-.. rst:role:: r
+.. rst:role:: doxy:r
 
   Insert a cross reference to the given target's documentation.
 
@@ -125,14 +125,16 @@ Doxygen constructs by supplying an alternate stylesheet through the
 `antidox_xml_stylesheet` parameter.
 
 A custom stylesheet can inherit from (or include) the default one by using an
-`import` statement. A basic stylesheet can be::
+`import` statement. A basic stylesheet can be
+
+.. code-block:: xml
 
   <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
     <xsl:import href="antidox:compound"/>
   </xsl:stylesheet>
 
 Because the XML templating system is designed so as to make it possible to apply
-the transforms offline with standard tools (see `Design philosophy`_), there is
+the transforms offline with standard tools (see :ref:`Design philosophy`), there is
 no access to the Doxygen database from within templates. This means that it is
 not possible to query the relationships (parent, children, etc) of the element
 being rendered from within the XSL template. The only information available is
