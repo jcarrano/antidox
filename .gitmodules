@@ -1,5 +1,5 @@
 [submodule "examples/riot/RIOT"]
 	path = examples/riot/RIOT
-	url = git@github.com:jcarrano/RIOT.git
+	url = https://github.com/jcarrano/RIOT.git
 	branch = sphinx-docs2
 	shallow = true
