@@ -6,6 +6,9 @@ Antidox: Use Doxygen sanely from within Sphinx
 An antidote to doxy-madness
 ---------------------------
 
+|docs|
+
+
 Note: currently under development
 =================================
 
@@ -19,8 +22,8 @@ this notice will be removed.
 Summary
 =======
 
-``antidox`` is a Sphinx extension that can read Doxygen XML "databases" and insert
-documentation for entities in sphinx documents.
+``antidox`` is a Sphinx_ extension that can read Doxygen_ XML "databases" and
+insert documentation for entities in Sphinx documents, similar to Breathe_.
 
 It is intended to be *fast* and simple, though *easily customizable*.
 
@@ -33,11 +36,19 @@ Objectives
 
 * Reuse API docs made with Doxygen in a Sphinx project.
 * Provide a smooth transition between 100% automatic API docs (what Doxygen
-  generates) and semi-manual documentation.
+  generates) and semi-manual documentation (autodoc-style).
 * Have sensible defaults for automatic documentation generation while allowing
   customization.
 * Deal with big projects efficiently: the main tool in use now (Breathe)
   has resource usage issues when dealing with large XML files.
 
+.. |docs| image:: https://readthedocs.org/projects/antidox/badge/?version=latest&style=for-the-badge
+    :alt: Documentation Status
+    :scale: 100%
+    :target: https://antidox.readthedocs.io/en/latest/?badge=latest
+
+.. _Sphinx: https://www.sphinx-doc.org
+.. _Doxygen: http://www.doxygen.nl/
+.. _Breathe: https://breathe.readthedocs.io/en/latest/
 .. _lxml: https://lxml.de/
 .. _sqlite3: https://docs.python.org/3/library/sqlite3.html
