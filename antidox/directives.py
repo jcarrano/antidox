@@ -40,6 +40,7 @@ class PseudoElementMeta(type):
 
 
 class PseudoElement(metaclass=PseudoElementMeta):
+    """Base class for elements that get replaced by the "c" directive."""
     TAG_NAME = None
 
 
@@ -203,7 +204,46 @@ def _get_node(tag):
         return getattr(nodes, tag)
 
 
-_ENTITY_RE = re.compile(r"(?:(?P<kind>\w+)?\[(?P<name>\w+)\])|(?P<target>[^[]\S*)")
+ENTITY_RE = re.compile(r"(?:(?P<kind>\w+)?\[(?P<name>\w+)\])|(?P<target>[^[]\S*)")
+"""Regular expression for references to entities.
+
+Catches either target strings (a/b.h::c) or kind[name] strings.
+
+Capture groups
+--------------
+
+``target``
+    The target string if the reference is a antidox.doxy.Target-compatible target
+    spec, else None.
+
+``kind``
+    None if kind was not specified or if the string is a target.
+
+``name``
+    The name if the string is kind[name] or [name] (i.e. not a target).
+"""
+
+
+def resolve_refstr(env, ref_str):
+    """Transform a reference string into a RefId"""
+
+    ref_spec = ENTITY_RE.fullmatch(ref_str)
+
+    if ref_spec is None:
+        raise InvalidEntity("Cannot parse entity: %s" % ref_str)
+
+    target = ref_spec['target']
+
+    db = env.antidox_db
+
+    if target:
+        ref = db.resolve_target(target)
+    else:
+        kind_s = ref_spec['kind']
+        ref = db.resolve_name(kind_s and doxy.Kind.from_attr(kind_s),
+                              ref_spec['name'])
+
+    return ref
 
 
 class InvalidEntity(sphinx.errors.SphinxError):
@@ -279,6 +319,7 @@ class DoxyExtractor(Directive):
 
         for action, elem in et_iter:
             # print(action, elem, elem.text)
+            # FIXME: factor this skipping logic into a interator filter.
             if action == "start":
                 if nocontent and elem.tag == 'desc_content':
                     et_iter.skip_subtree()
@@ -354,19 +395,7 @@ class DoxyExtractor(Directive):
         return [node]
 
     def run(self):
-        target_spec = _ENTITY_RE.fullmatch(self.arguments[0])
-
-        if target_spec is None:
-            raise InvalidEntity("Cannot parse entity: %s" % self.arguments[0])
-
-        target = target_spec['target']
-
-        if target:
-            ref = self.db.resolve_target(target)
-        else:
-            kind_s = target_spec['kind']
-            ref = self.db.resolve_name(kind_s and doxy.Kind.from_attr(kind_s),
-                                       target_spec['name'])
+        ref = resolve_refstr(self.env, self.arguments[0])
 
         return self.run_reference(ref)
 
