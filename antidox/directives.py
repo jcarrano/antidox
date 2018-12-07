@@ -310,9 +310,14 @@ class DoxyExtractor(Directive):
         locale features.
 
         If nocontent is True, then desc_content nodes will be skipped.
+
+        Return
+        ------
+
+        nodes: List of sphinx nodes
         """
-        print(self.env)
         curr_element = []
+        root = curr_element
 
         et_iter = ET.iterwalk(e, events=("start", "end"))
         skipped = False
@@ -361,11 +366,13 @@ class DoxyExtractor(Directive):
 
                 if curr_element.parent is not None:
                     curr_element = curr_element.parent
+                else:
+                    curr_element = root
 
                 if elem.tail:
                     curr_element.append(nodes.Text(elem.tail, elem.tail))
 
-        return curr_element
+        return root
 
     def run_reference(self, ref):
         """Convert the doxygen XML of a reference into Sphinx nodes.
@@ -392,7 +399,7 @@ class DoxyExtractor(Directive):
         if style_fn:
             self.env.note_dependency(style_fn)
 
-        return [node]
+        return node
 
     def run(self):
         ref = resolve_refstr(self.env, self.arguments[0])
