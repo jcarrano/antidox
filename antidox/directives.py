@@ -246,8 +246,28 @@ def resolve_refstr(env, ref_str):
     return ref
 
 
+class _Universal:
+    """Container containing everything."""
+    def __contains__(self, k):
+        """Returns True always because this container contains everything."""
+        return True
+
+
+_Universe = _Universal()
+"""Singleton universal object"""
+
+
+def _empty_to_universe(s):
+    return (s or _Universe) if s is not None else ()
+
+
 class InvalidEntity(sphinx.errors.SphinxError):
     pass
+
+
+def string_list(argument):
+    """Parse a list of strings. If no argument is given, return an empty list."""
+    return argument.split() if argument is not None else []
 
 
 class DoxyExtractor(Directive):
@@ -277,6 +297,8 @@ class DoxyExtractor(Directive):
         'hidedef': directives.flag,
         'hideloc': directives.flag,  # TODO: support hideloc
         'hidedoc': directives.flag,
+        'children': string_list,
+        'no-children': string_list,
     }
 
     def add_target_and_index(self, name, sig, signode):
@@ -391,20 +413,64 @@ class DoxyExtractor(Directive):
 
         my_domain = self.env.domains['doxy']
         rst_etree = my_domain.stylesheet(element_tree)
-        node = self._etree_to_sphinx(rst_etree,
-                                     nocontent='hidedoc' in self.options,
-                                     nodef='hidedef' in self.options)
+        nodes = self._etree_to_sphinx(rst_etree,
+                                      nocontent='hidedoc' in self.options,
+                                      nodef='hidedef' in self.options)
 
         style_fn = my_domain.stylesheet_filename
         if style_fn:
             self.env.note_dependency(style_fn)
 
-        return node
+        return nodes
 
     def run(self):
-        ref = resolve_refstr(self.env, self.arguments[0])
+        arg0 = self.arguments[0]
 
-        return self.run_reference(ref)
+        if isinstance(arg0, doxy.RefId):
+            ref = arg0
+        else:
+            ref = resolve_refstr(self.env, arg0)
+
+        nodes = self.run_reference(ref)
+
+        # TODO: factor out inclusion logic
+
+        no_children = _empty_to_universe(self.options.get('no-children'))
+        yes_children = _empty_to_universe(self.options.get('children'))
+
+        if yes_children and no_children is not _Universe:
+            all_child_members, all_child_compounds = self.db.find_children(ref)
+
+            this_kind = self.db.get(ref)['kind']
+
+            def _member_accept(name, kind):
+                return ((kind != this_kind) if yes_children is _Universe
+                        else (name in yes_children))
+
+            inclusion_list = [(ref, {}) for ref, name, kind in all_child_members
+                              if name in yes_children and name not in no_children]
+
+            inclusion_list.extend((ref, {} if kind != this_kind else {'no-children': ''})
+                                  for ref, name, kind in all_child_compounds
+                                  if _member_accept(name, kind)
+                                  and name not in no_children)
+        else:
+            inclusion_list = ()
+
+        # just in case the elements produced not output, it should not be an
+        # error.
+        inclusion_node = nodes[-1] if nodes else nodes
+        this_directive = type(self)
+
+        # TODO: remove recursion
+        inclusion_node.extend(
+            internal_node
+            for refid, options in inclusion_list
+            for internal_node in this_directive(
+                'doxy:c', [refid], options, [], self.lineno,
+                0, "", self.state, self.state_machine).run())
+
+        return nodes
 
 
 def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
