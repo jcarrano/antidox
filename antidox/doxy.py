@@ -254,6 +254,10 @@ class Target(_Target):
         return self.name.split('::')
 
 
+SearchResult = namedtuple("SearchResult", "refid name kind")
+"""Container for the result of find_children and find_parents queries."""
+
+
 def _match_path(p1, p2):
     """Compare two paths from right to left and return True if they could refer
     to the same file.
@@ -504,45 +508,48 @@ class DoxyDB:
         Returns
         -------
 
-        iterable:
+        results: iterable yielding SearchResult
             All direct ancestors of this element.
         """
         cur = self._db_conn.execute(
-        """SELECT p_prefix, p_id
+        """SELECT p_prefix, p_id, name, kind
         FROM hierarchy INNER JOIN elements
             ON hierarchy.p_prefix = elements.prefix AND hierarchy.p_id = elements.id
         WHERE hierarchy.prefix = ?
               AND hierarchy.id = ?
               AND kind in compound_kinds""", refid)
 
-        return (RefId(*r) for r in cur)
+        return (SearchResult(RefId(*ref), name, kind) for *ref, name, kind in cur)
 
     @_refid_str
     def find_children(self, refid):
-        """Get the refid of members and compounds that are a direct descendants
-        of this element.
+        """Find all members and compounds that are a direct descendants of this
+        element.
 
         Returns
         -------
 
-        iterable (members, compounds)
-            where each element is an iterable yielding the refid for child
-            compounds and members.
+        members: list of SearchResult
+            Descendents that cannot contain any children themselves.
+        compounds: list of SearchResult
+            Descendents that are compounds, and as such may contain children.
         """
 
         cur = self._db_conn.execute(
-        """SELECT hierarchy.prefix, hierarchy.id, kind IN compound_kinds
+        """SELECT hierarchy.prefix, hierarchy.id, name, kind,
+                  kind IN compound_kinds as is_compound
         FROM hierarchy INNER JOIN elements
             ON hierarchy.prefix = elements.prefix AND hierarchy.id = elements.id
         WHERE hierarchy.p_prefix = ?
               AND hierarchy.p_id = ?
         ORDER BY
-              kind IN compound_kinds""",
+              is_compound""",
             refid)
 
         r = [(), ()]
-        for iscompound, g in itertools.groupby(cur, lambda x: x[2]):
-            r[iscompound] = [RefId(p, i) for p, i, k in g]
+        for iscompound, g in itertools.groupby(cur, lambda x: x["is_compound"]):
+            r[iscompound] = [SearchResult(RefId(prefix, _id), name, kind)
+                             for prefix, _id, name, kind, _ in g]
 
         return r
 
@@ -730,7 +737,7 @@ class DoxyDB:
             # Doxygen defines the same member in more than one place.
             # It is wasteful, though it makes our life easier.
             try:
-                definition_file_base = next(self.find_parents(refid))
+                definition_file_base = next(res.refid for res in self.find_parents(refid))
             except StopIteration as e:
                 raise ConsistencyError("Cannot find compound containing %s" % refid) from e
 
@@ -782,8 +789,8 @@ class DoxyDB:
             # actual variables.
             # TODO: do this with a query
             _struct_like = (Kind.UNION, Kind.STRUCT)
-            parent_is_struct = any(self.get(p)["kind"] in _struct_like
-                                   for p in self.find_parents(refid))
+            parent_is_struct = any(res.kind in _struct_like
+                                   for res in self.find_parents(refid))
 
             return "member" if parent_is_struct else "var"
 

@@ -186,10 +186,9 @@ class Shell(cmd.Cmd):
 
         print(self.db.resolve_name(kind, name))
 
-    def _print_refids(self, rs):
-        """Pretty print a list of refids"""
-        for r in rs:
-            n, k = self.db.get(r)
+    def _print_results(self, rs):
+        """Pretty print a list of SearchResults"""
+        for r, n, k in rs:
             print("{}\t{}\t{}".format(r, k, n))
 
     @_catch
@@ -201,7 +200,8 @@ class Shell(cmd.Cmd):
 
         Show information for an entity, given as refid or target.
         """
-        self._print_refids((refid,))
+        name, kind = self.db.get(refid)
+        print("{}\t{}\t{}".format(refid, kind, name))
 
     @_catch
     @_any_to_refid
@@ -212,7 +212,7 @@ class Shell(cmd.Cmd):
 
         Get all compounds that include this element.
         """
-        self._print_refids(self.db.find_parents(refid))
+        self._print_results(self.db.find_parents(refid))
 
     @_catch
     @_any_to_refid
@@ -225,9 +225,9 @@ class Shell(cmd.Cmd):
         """
         members, compounds = self.db.find_children(refid)
         print("#members")
-        self._print_refids(members)
+        self._print_results(members)
         print("#compounds")
-        self._print_refids(compounds)
+        self._print_results(compounds)
 
     @_catch
     @_any_to_refid
