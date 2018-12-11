@@ -423,43 +423,52 @@ class DoxyDB:
         self._db_conn.executemany("INSERT INTO syn_compound_kinds VALUES (?)",
                                   ((x,) for x in _syn_compounds))
 
+    def _insert_element(self, refid, name, kind, parent_refid=None):
+        """Insert an element into the database."""
+
+        try:
+            self._db_conn.execute("INSERT INTO elements values "
+                                  "(?, ?, ?, ?)",
+                                  refid + (name, kind))
+        except sqlite3.IntegrityError:
+            print(refid, name, kind)  # FIXME: replace by proper logging
+            raise
+
+        if parent_refid is not None:
+            self._db_conn.execute("INSERT INTO hierarchy values (?, ?, ?, ?)",
+                                  refid + parent_refid)
+
     def _read_index(self, indexfile):
         """Parse index.xml and insert the elements in the database."""
         for event, elem in _ez_iterparse(indexfile, ("end",)):
             if elem.tag == "doxygenindex":
                 continue
 
-            if event == "end":
-                if elem.tag == "name":
-                    elem.getparent().attrib["name"] = elem.text
-                    continue
-                elif elem.tag == "compound":
-                    p_refid = None
-                elif elem.tag == "member":
-                    p_refid = RefId(elem.getparent().attrib["refid"])
-                else:
-                    raise DoxyFormatError("Unknown tag in index: %s"
-                                          % elem.tag)
+            # Doxygen puts the name of an element in a child element <name>
+            # instead of an attribute. Here we move it so that it is like we
+            # want it to be, and of course we skip the <name> element.
+            if elem.tag == "name":
+                elem.getparent().attrib["name"] = elem.text
+                continue
 
-                this_refid = RefId(elem.attrib["refid"])
-                kind = Kind.from_attr(elem.attrib["kind"])
-                try:
-                    name = elem.attrib["name"]
-                except KeyError as e:
-                    raise DoxyFormatError("Element definition without a name: %s"
-                                          % elem.attrib["refid"]) from e
+            if elem.tag == "compound":
+                p_refid = None
+            elif elem.tag == "member":
+                p_refid = RefId(elem.getparent().attrib["refid"])
+            else:
+                raise DoxyFormatError("Unknown tag in index: %s"
+                                      % elem.tag)
 
-                try:
-                    self._db_conn.execute("INSERT INTO elements values "
-                                          "(?, ?, ?, ?)",
-                                          this_refid + (name, kind))
-                except sqlite3.IntegrityError:
-                    print(this_refid, name, kind)  # FIXME: replace by proper logging
-                    raise
+            this_refid = RefId(elem.attrib["refid"])
+            kind = Kind.from_attr(elem.attrib["kind"])
+            try:
+                name = elem.attrib["name"]
+            except KeyError as e:
+                raise DoxyFormatError("Element definition without a name: %s"
+                                      % elem.attrib["refid"]) from e
 
-                if p_refid is not None:
-                    self._db_conn.execute("INSERT INTO hierarchy values (?, ?, ?, ?)",
-                                          this_refid + p_refid)
+            self._insert_element(this_refid, name, kind, p_refid)
+
 
     def _load_all_inner(self):
         """Load the XML file for each compound and assemble the hierarchy."""

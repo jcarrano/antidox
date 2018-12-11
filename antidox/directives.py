@@ -312,6 +312,8 @@ class DoxyExtractor(Directive):
         'no-children': string_list,
     }
 
+    _node_hidings_opts = {'hidedef', 'hidedoc'}
+
     def add_target_and_index(self, name, sig, signode):
         # type: (Any, unicode, addnodes.desc_signature) -> None
         """
@@ -329,6 +331,7 @@ class DoxyExtractor(Directive):
 
     @property
     def env(self):
+        """Shortcut to get this document's environment."""
         return self.state.document.settings.env
 
     @property
@@ -336,13 +339,44 @@ class DoxyExtractor(Directive):
         """Get the DoxyDB object."""
         return self.env.antidox_db
 
-    def _etree_to_sphinx(self, e, nocontent=False, nodef=False):
+    @staticmethod
+    def _iterwalk_with_hiding(etree, hidedoc=False, hidedef=False):
+        """Iterator around ET.iterwalk that transparently skips desc_content
+        and {antidox}definition based on hidedoc and hidedef.
+
+        Returns
+        -------
+
+        Iterator yielding event, element just like ET.iterwalk. The events are
+        ("start", "end").
+        """
+        et_iter = ET.iterwalk(etree, events=("start", "end"))
+        skipped = False
+
+        for action, elem in et_iter:
+            if action == "start":
+                if hidedoc and elem.tag == 'desc_content':
+                    et_iter.skip_subtree()
+                    skipped = True
+                elif hidedef and elem.attrib.get("{antidox}definition") == 'true':
+                    et_iter.skip_subtree()
+                    skipped = True
+                else:
+                    yield action, elem
+            else:
+                if skipped:
+                    skipped = False
+                else:
+                    yield action, elem
+
+    def _etree_to_sphinx(self, etree, **kwargs):
         """Convert an element tree to sphinx nodes.
 
         A text node with a antidox:l attribute will be translated using sphinx
         locale features.
 
-        If nocontent is True, then desc_content nodes will be skipped.
+        kwargs will be passed to _iterwalk_with_hiding to determine which nodes
+        to skip.
 
         Return
         ------
@@ -356,25 +390,10 @@ class DoxyExtractor(Directive):
         curr_element = []
         root = curr_element
 
-        et_iter = ET.iterwalk(e, events=("start", "end"))
-        skipped = False
-
         special = {}
 
-        for action, elem in et_iter:
-            # print(action, elem, elem.text)
-            # FIXME: factor this skipping logic into a interator filter.
+        for action, elem in self._iterwalk_with_hiding(etree, **kwargs):
             if action == "start":
-                if nocontent and elem.tag == 'desc_content':
-                    et_iter.skip_subtree()
-                    skipped = True
-                    continue
-
-                if nodef and elem.attrib.get("{antidox}definition") == 'true':
-                    et_iter.skip_subtree()
-                    skipped = True
-                    continue
-
                 nclass = _get_node(elem.tag)
 
                 text = elem.text or (_locale(elem.text)
@@ -395,10 +414,6 @@ class DoxyExtractor(Directive):
                 curr_element.append(node)
                 curr_element = node
             else:
-                if skipped:
-                    skipped = False
-                    continue
-
                 if isinstance(curr_element, PlaceHolder):
                     curr_element.replace_placeholder(self.lineno, self.state,
                                                      self.state_machine)
@@ -406,10 +421,7 @@ class DoxyExtractor(Directive):
                 if isinstance(curr_element, DeferredPlaceholder):
                     special[curr_element.tagname] = curr_element
 
-                if curr_element.parent is not None:
-                    curr_element = curr_element.parent
-                else:
-                    curr_element = root
+                curr_element = curr_element.parent or root
 
                 if elem.tail:
                     curr_element.append(nodes.Text(elem.tail, elem.tail))
@@ -435,8 +447,7 @@ class DoxyExtractor(Directive):
         rst_etree = my_domain.stylesheet(element_tree)
         nodes, special = self._etree_to_sphinx(
             rst_etree,
-            nocontent='hidedoc' in self.options,
-            nodef='hidedef' in self.options)
+            **{k: k in self.options for k in self._node_hidings_opts})
 
         style_fn = my_domain.stylesheet_filename
         if style_fn:

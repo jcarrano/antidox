@@ -20,16 +20,34 @@ XML processor. That means there a no special functions and no special template
 parameters. During normal operation, the intermediate XML is never written to
 a document, but it is kept in memory as an element tree.
 
-reST nodes are constructed from an argument that is the "raw" source code for
-that element, plus a set of keyword arguments. Only nodes derived from ``Text``
-can contain text. The rest of the nodes must have a Text-derived node as a
-child if the are to have text.
+Standard Sphinx and reST nodes
+------------------------------
 
 From the intermediate XML, all unqualified elements are converted to reST nodes
 of the same name (``docutils.nodes`` and ``sphinx.addnodes`` are searched).
 If the element does not map to a Text-derived node and there is a TEXT element
 inside, a new Text node is created. Otherwise the text is used to create the
 node.
+
+Setting attributes
+~~~~~~~~~~~~~~~~~~
+
+Some nodes accept a list of values as arguments. XML element attributes, however,
+are always string. To work around this issue, antidox allows encoding lists for
+these attributes by using "|" as a separator.
+
+Additional information
+~~~~~~~~~~~~~~~~~~~~~~
+
+reST nodes are constructed from an argument that is the "raw" source code for
+that element, plus a set of keyword arguments. Only nodes derived from ``Text``
+can contain text. The rest of the nodes must have a Text-derived node as a
+child if the are to have text.
+
+When creating nodes, the template interpreter in antidox sets the "raw" argument
+to an empty string. Also, all line numbers are set to the line number of the
+directive, for lack of a more meaningful value.
+
 
 antidox-specific attributes
 ---------------------------
