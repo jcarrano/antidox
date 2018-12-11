@@ -129,6 +129,7 @@
             <desc_content>
                 <xsl:apply-templates select="briefdescription"/>
                 <xsl:apply-templates select="detaileddescription"/>
+                <antidox:children/>
             </desc_content>
         </desc>
     </xsl:template>

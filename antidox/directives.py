@@ -36,7 +36,8 @@ class PseudoElementMeta(type):
     def __init__(cls, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        cls.tag_map[cls.TAG_NAME] = cls
+        if cls.TAG_NAME:
+            cls.tag_map[cls.TAG_NAME] = cls
 
 
 class PseudoElement(metaclass=PseudoElementMeta):
@@ -56,6 +57,16 @@ class PlaceHolder(PseudoElement):
         new = self.run_directive(*args)
 
         self.replace_self(new)
+
+
+class DeferredPlaceholder(PseudoElement, nodes.Element):
+    """Base class for placeholders that are replaced by content that depends on
+    the directive contents and options."""
+
+
+class Children(DeferredPlaceholder):
+    TAG_NAME = "{antidox}children"
+    tagname = "antidox_children"
 
 
 class Index(PlaceHolder, nodes.Inline, nodes.TextElement):
@@ -337,12 +348,18 @@ class DoxyExtractor(Directive):
         ------
 
         nodes: List of sphinx nodes
+        special: dictionary if special placeholder nodes.
+            Currently defined elements are:
+            antidox_children
+                placeholder that should be replaced by this element's children.
         """
         curr_element = []
         root = curr_element
 
         et_iter = ET.iterwalk(e, events=("start", "end"))
         skipped = False
+
+        special = {}
 
         for action, elem in et_iter:
             # print(action, elem, elem.text)
@@ -386,6 +403,9 @@ class DoxyExtractor(Directive):
                     curr_element.replace_placeholder(self.lineno, self.state,
                                                      self.state_machine)
 
+                if isinstance(curr_element, DeferredPlaceholder):
+                    special[curr_element.tagname] = curr_element
+
                 if curr_element.parent is not None:
                     curr_element = curr_element.parent
                 else:
@@ -394,7 +414,7 @@ class DoxyExtractor(Directive):
                 if elem.tail:
                     curr_element.append(nodes.Text(elem.tail, elem.tail))
 
-        return root
+        return root, special
 
     def run_reference(self, ref):
         """Convert the doxygen XML of a reference into Sphinx nodes.
@@ -413,15 +433,16 @@ class DoxyExtractor(Directive):
 
         my_domain = self.env.domains['doxy']
         rst_etree = my_domain.stylesheet(element_tree)
-        nodes = self._etree_to_sphinx(rst_etree,
-                                      nocontent='hidedoc' in self.options,
-                                      nodef='hidedef' in self.options)
+        nodes, special = self._etree_to_sphinx(
+            rst_etree,
+            nocontent='hidedoc' in self.options,
+            nodef='hidedef' in self.options)
 
         style_fn = my_domain.stylesheet_filename
         if style_fn:
             self.env.note_dependency(style_fn)
 
-        return nodes
+        return nodes, special
 
     def run(self):
         arg0 = self.arguments[0]
@@ -431,7 +452,7 @@ class DoxyExtractor(Directive):
         else:
             ref = resolve_refstr(self.env, arg0)
 
-        nodes = self.run_reference(ref)
+        nodes, special = self.run_reference(ref)
 
         # TODO: factor out inclusion logic
 
@@ -457,18 +478,21 @@ class DoxyExtractor(Directive):
         else:
             inclusion_list = ()
 
-        # just in case the elements produced not output, it should not be an
-        # error.
-        inclusion_node = nodes[-1] if nodes else nodes
         this_directive = type(self)
 
-        # TODO: remove recursion
-        inclusion_node.extend(
-            internal_node
-            for refid, options in inclusion_list
-            for internal_node in this_directive(
-                'doxy:c', [refid], options, [], self.lineno,
-                0, "", self.state, self.state_machine).run())
+        nodes_to_insert = (internal_node
+                           for refid, options in inclusion_list
+                           for internal_node in this_directive(
+                               'doxy:c', [refid], options, [], self.lineno,
+                               0, "", self.state, self.state_machine).run())
+
+        # just in case the elements produced not output, it should not be an
+        # error.
+        if "antidox_children" in special:
+            # replace_self needs an indexable sequence
+            special["antidox_children"].replace_self(list(nodes_to_insert))
+        else:
+            (nodes[-1] if nodes else nodes).extend(nodes_to_insert)
 
         return nodes
 

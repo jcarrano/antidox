@@ -31,7 +31,7 @@ If the element does not map to a Text-derived node and there is a TEXT element
 inside, a new Text node is created. Otherwise the text is used to create the
 node.
 
-antidox-specific extensions
+antidox-specific attributes
 ---------------------------
 
 ``antidox:l`` (attribute)
@@ -40,14 +40,46 @@ antidox-specific extensions
 When set to ``"true"`` in a Text-derived element, the text is run through
 Sphinx's locale function.
 
-``antidox:definition`` (attribute)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``antidox:definition``
+~~~~~~~~~~~~~~~~~~~~~~
 
 When set to ``"true"`` in any element it indicates that it is a definition and
 should be skipped when the ":hidedef:" option is given.
 
-``antidox:directive``
-~~~~~~~~~~~~~~~~~~~~~
+antidox-specific (pseudo)elements
+---------------------------------
+
+``<antidox:usercontent>``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. note:
+
+  Not yet implemented
+
+Placeholder for user-defined content, that is, content given in the body of the
+rst:dir:`doxy:c` directive.
+
+.. todo:
+
+  document where content is placed by default.
+
+``<antidox:children>``
+~~~~~~~~~~~~~~~~~~~~~~
+
+Placeholder for child elements. This node will be replaced by the subtrees of
+children that result from the :ref:`children-option` and
+:ref:`no-children-option`. By default children subtrees are appended to the last
+root element resulting from the transform.
+
+Generating directives
+---------------------
+
+Directives in reST do not have their own nodes. Rather, they generate nodes that
+are then inserted in the document.
+
+
+``<antidox:directive>``
+~~~~~~~~~~~~~~~~~~~~~~~
 
 This element calls a directive. reST directives are not nodes: they generate
 nodes that are added to the tree. This element can have the following parameters:
@@ -58,30 +90,27 @@ nodes that are added to the tree. This element can have the following parameters
 Other parameters
   Other parameters will be intepreted as directive options.
 
-``antidox:directive-argument``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``<antidox:directive-argument>``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Placed inside `antidox:directive`_, its TEXT is translated to arguments for that
 directive.
 
-``antidox:directive-content``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``<antidox:directive-content>``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This element's TEXT is the content of the containing directive.
+
+Other
+-----
 
 ``antidox:compound``
 ~~~~~~~~~~~~~~~~~~~~
 
-Name of the builtin default stylesheet, to be used as ``href`` in ``xsl:import``
-and ``xsl:include`` statements.
+Name of the built-in default stylesheet, to be used as ``href`` in ``xsl:import``
+and ``xsl:include`` statements, for example
 
-Since this package can be installed as a zip, the actual XSL file may not exist
-as such in the filesystem. For this reason a custom resolver is defined.
-
-``antidox:compound`` (stylesheet)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Name of the built-in stylesheet. Use it to inherit from it and extend it, as in::
+.. code-block: xslt
 
   <xsl:import href="antidox:compound"/>
 
