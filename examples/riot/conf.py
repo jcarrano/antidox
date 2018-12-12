@@ -159,3 +159,24 @@ texinfo_documents = [
 
 antidox_doxy_xml_dir = "RIOT/doc/doxygen/xml"
 #antidox_xml_stylesheet = "custom.xsl"
+
+import antidox.doxy
+import antidox.directives
+import re
+
+_SINGLE_UNDERSCORE = re.compile("^_[^_].*")
+
+def struct_no_undescore(app, this, options):
+    """Handle the antidox-include-children event and cause it to skip struct
+    members that start with a single underscode"""
+    db = app.env.antidox_db
+
+    if db.get(this)['kind'] == antidox.doxy.Kind.STRUCT:
+        pre_inclusion = antidox.directives.default_inclusion_policy(app, this, options)
+
+        return pre_inclusion and [(k, v) for k, v in pre_inclusion
+                if not _SINGLE_UNDERSCORE.fullmatch(db.get(k)['name'])]
+
+
+def setup(app):
+    app.connect("antidox-include-children", struct_no_undescore)

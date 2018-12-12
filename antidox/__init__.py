@@ -23,6 +23,7 @@ def load_db(app, env, docnames):
 def setup(app):
     app.add_config_value("antidox_doxy_xml_dir", "", 'env')
     app.add_config_value("antidox_xml_stylesheet", "", 'env')
+    app.add_event("antidox-include-children")
 
     # TODO: provide support for multiple Doxygen projects
     app.connect("env-before-read-docs", load_db)

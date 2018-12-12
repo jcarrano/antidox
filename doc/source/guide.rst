@@ -153,10 +153,6 @@ form of events- see the next section.
 Events
 ------
 
-.. note::
-
-  This functionality is currently under development.
-
 .. event:: antidox-include-children (app, this, options)
 
   Emitted once for every :rst:dir:`c` directive, to determine which child
@@ -166,6 +162,8 @@ Events
   or list of tuples of the form ``(refid, options)``. In the latter case,
   ``refid`` should be a doxy.RefId object and options a dictionary which will
   set the options for the nested :rst:dir:`doxy:c` directive.
+
+  The default behavior is implemented by :py:func:`directive.default_inclusion_policy`.
 
   :param app: the Sphinx application object
   :param this: refid for the object currently being documented.
