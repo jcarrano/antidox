@@ -69,6 +69,8 @@ html_static_path = ['_static']
 
 napoleon_numpy_docstring = True
 
+autodoc_mock_imports = ['lxml']
+
 # -- Options for todo extension ----------------------------------------------
 
 # If true, `todo` and `todoList` produce output, else they produce nothing.
