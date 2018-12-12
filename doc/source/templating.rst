@@ -85,9 +85,9 @@ rst:dir:`doxy:c` directive.
 ~~~~~~~~~~~~~~~~~~~~~~
 
 Placeholder for child elements. This node will be replaced by the subtrees of
-children that result from the :ref:`children-option` and
-:ref:`no-children-option`. By default children subtrees are appended to the last
-root element resulting from the transform.
+children that result from the :ref:`children option <children-option>` and
+:ref:`no-children option <no-children-option>`. By default children subtrees are
+appended to the last root element resulting from the transform.
 
 Generating directives
 ---------------------
@@ -95,6 +95,7 @@ Generating directives
 Directives in reST do not have their own nodes. Rather, they generate nodes that
 are then inserted in the document.
 
+.. _antidox-directive-elem:
 
 ``<antidox:directive>``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -111,8 +112,8 @@ Other parameters
 ``<antidox:directive-argument>``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Placed inside `antidox:directive`_, its TEXT is translated to arguments for that
-directive.
+Placed inside :ref:`antidox-directive-elem`, its TEXT is translated to arguments
+for that directive.
 
 ``<antidox:directive-content>``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

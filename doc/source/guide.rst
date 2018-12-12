@@ -87,14 +87,14 @@ Directives and roles are contained in an `doxy` domain.
 
   To be implemented:
 
-  .. children-option:
+  .. _children-option:
 
   ``children``
     Include documentation for the given child elements. This option may be empty,
     in which case the default is to include all children whose `kind` is
     different from the current element.
 
-  .. no-children-option:
+  .. _no-children-option:
 
   ``no-children``
     Exclude the selected children. By default if this option is empty, it forces

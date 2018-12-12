@@ -173,7 +173,7 @@ class RefId(_RefId):
     This object can be constructed in two ways:
 
     * From a string.
-    * From separate prefix and id_ components.
+    * From separate ``prefix`` and ``id_`` components.
     """
 
     def __new__(cls, *args, **kwargs):
@@ -226,7 +226,8 @@ class Target(_Target):
     * From separate path and name components. Additionally, the name component
       may be either a string or an iterable yielding name sub-components.
 
-    A file entity is represented as <path>::* (i.e., the name filed is *).
+    A file entity is represented as ``<path>::*`` (i.e., the name filed is
+    ``*``).
     """
     def __new__(cls, *args):
         # FIXME: this does not match namedtuple's __new__ signature
@@ -309,9 +310,7 @@ def _target_str(f):
 
 
 class DoxyDB:
-    """
-    Interface to the Doxygen DB
-    ===========================
+    """Interface to the Doxygen DB
 
     The Doxygen DB is just a directory filled with xml files. It should contain
     an "index.xml".
@@ -326,17 +325,11 @@ class DoxyDB:
     can create a sqlite3 db, but it's not very well documented (ironic, isn't
     it?).
 
-    Read-only index
-    ---------------
-
-    After the initial database creation, no further modification are done by any
+    Read-only index: After the initial database creation, no further modification are done by any
     method. This ensures DoxyDB is safe to use for parallel builds (where there
     will be multiple independent processes, each with a copy of the in-memory DB)
 
-    refid
-    -----
-
-    Each element in Doxygen is uniquely defined by a "refid", consisting of a
+    refid: Each element in Doxygen is uniquely defined by a "refid", consisting of a
     string of the form string_part_1id_part.
     """
     # TODO: Finish writing docstring

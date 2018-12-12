@@ -4,6 +4,12 @@
 
     Simple debug shell. This application lets you query the database that
     is generated from Doxygen XML docs.
+
+    Access it by typing::
+
+      python -m antidox.shell
+
+    or by using the ``antidox-shell`` console script.
 """
 
 

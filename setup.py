@@ -28,6 +28,11 @@ setup(name='antidox',
         'sphinx',
         'lxml2'
       ],
+      entry_points={
+        'console_scripts': [
+            'antidox-shell = antidox.shell:main',
+        ],
+      }
       include_package_data=True,
       zip_safe=True
 )

@@ -40,8 +40,7 @@ ENTITY_RE = re.compile(r"(?:(?P<kind>\w+)?\[(?P<name>\w+)\])|(?P<target>[^[]\S*)
 
 Catches either target strings (a/b.h::c) or kind[name] strings.
 
-Capture groups
---------------
+Capture groups:
 
 ``target``
     The target string if the reference is a antidox.doxy.Target-compatible
@@ -56,7 +55,7 @@ Capture groups
 
 
 def resolve_refstr(env, ref_str):
-    """Transform a reference string into a RefId"""
+    """Transform a reference string (see :py:data:`ENTITY_RE`) into a RefId"""
 
     ref_spec = ENTITY_RE.fullmatch(ref_str)
 
