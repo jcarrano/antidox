@@ -343,6 +343,7 @@ class DoxyDB:
 
         self._read_index(os.path.join(self._xml_dir, "index.xml"))
         self._load_all_inner()
+        self._vacuum()
 
     # Pickle support
     def __getstate__(self):
@@ -360,6 +361,15 @@ class DoxyDB:
         self._db_conn = None
         self._create_db_conn()
         self._db_conn.executescript(state['_db_dump'])
+        self._vacuum()
+
+    def _vacuum(self):
+        old_isolation = self._db_conn.isolation_level
+        self._db_conn.isolation_level = None
+        try:
+            self._db_conn.execute("VACUUM")
+        finally:
+            self._db_conn.isolation_level = old_isolation
 
     def _create_db_conn(self):
         """Initialize the DB connection and configure it."""
