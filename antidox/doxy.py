@@ -633,38 +633,59 @@ class DoxyDB:
         return result
 
     @staticmethod
-    def _cur_to_refid(cur, target):
+    def _cur_to_refid(cur, target, scoped = False):
         """Turn a cursor into a Refid. Raise errors if it is empty or has more
-        than one element."""
+        than one element (except if scoped is True, see below.)
+
+        The cursor should contain 3 columns, and be ordered in descending order
+        according to the first one:
+
+        in_scope
+            true if the target is a direct descendant of a "scope"
+            parameter. This is only relevant if scoped = True.
+        prefix
+            prefix of refid
+        id
+            id of refid
+
+        Multiple results are tolerated if scoped is True, and there is exactly
+        one result with in_scope = True.
+        """
 
         r = list(cur)
+
+        scoped_results = (x for x in r if x["in_scope"])
 
         if not r:
             raise InvalidTarget("Cannot resolve target: %s" % str(target))
         # FIXME: this is failing for paths that are a prefix of another one.
-        if len(r) > 1:
+        if len(r) > 1 and (not scoped or not r[0]["in_scope"]
+                           or len(list(scoped_results)) > 1):
             raise AmbiguousTarget("Target (%s) resolves to more than one element"
-                                  % str(target), [RefId(*row) for row in r])
+                                      % str(target), [RefId(*row[1:]) for row in r])
 
-        return RefId(*r[0])
+        return RefId(*r[0][1:])
 
     @_target_str
-    def resolve_target(self, target):
+    def resolve_target(self, target, scope = None):
         """Convert a target string into a refid.
 
         This method accepts a string of the form
             [[<dir>/]*<file>::][ns::name]
 
+        If scope is given it must be a RefId or refid-compatible string.
+
         The path and the amount of directory components included is optional as
         long as it resolves univocally.
         If the string is ambiguous (i.e., more than one entity matches, an error
         is raised).
+        The scope parameter allows for disambiguation by preferring results that
+        are children of a given refid. Even then, if more there is more than one
+        result that matches both conditions, it is still an error.
         Because of the way Doxygen works with C, if there is a namespace it
         must be specified. This only happens with structs/unions defined inside
         other struct/unions.
         """
-        target = Target(target)
-
         components = tuple(target.name_components)
         ncompo = len(components)
 
@@ -675,6 +696,8 @@ class DoxyDB:
             accept_level = ncompo
 
         path_filter = target.path
+
+        scope_prefix, scope_id = RefId(scope) if scope else ("", "")
 
         # The call to barename is a kind of hack. It is necessary because
         #      doxygen stores some names with namespaces and some without.
@@ -700,19 +723,29 @@ class DoxyDB:
                         ON f.level = c.level
                 WHERE barename(e.name) = c.compo
             )
-        SELECT DISTINCT prefix, id FROM follow
-            WHERE level = ?
+        SELECT MAX(h.p_prefix = ? AND h.p_id = ?) AS in_scope, f.prefix, f.id FROM
+            (SELECT DISTINCT prefix, id FROM follow
+                 WHERE level = ?
+            ) AS f
+            LEFT JOIN hierarchy AS h
+                ON h.prefix = f.prefix AND h.id = f.id
+        GROUP BY f.prefix, f.id
+        ORDER BY in_scope DESC
         """ % ",".join("(%s, ?)" % i for i in range(ncompo)),
-            components + (Kind.FILE, path_filter, accept_level))
+            components + (Kind.FILE, path_filter, scope_prefix, scope_id,
+                          accept_level))
 
-        return self._cur_to_refid(cur, target)
+        return self._cur_to_refid(cur, target, scope is not None)
 
-    def resolve_name(self, kind, name):
+    def resolve_name(self, kind, name, scope = None):
         """Find an element with the specified kind and name. If kind is not given,
         all kinds are searched.
 
         More than one result will trigger an AmbiguousTarget exception.
         Less than one, and InvalidTarget.
+
+        Ambiguity can be saved by providing a scope similar to `resolve_target`
+        (currently not implemented.)
         """
 
         if kind:

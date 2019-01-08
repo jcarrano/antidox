@@ -161,17 +161,19 @@ class Shell(cmd.Cmd):
         pass
 
     @_catch
-    def do_r(self, target):
+    def do_r(self, target_and_scope):
         """\
-        r <target>
+        r <target> [<scope>]
         Get the refid of a target.
         """
-        print(self.db.resolve_target(target))
+        target, *maybe_scope = target_and_scope.split()
+        scope = maybe_scope[0] if maybe_scope else None
+        print(self.db.resolve_target(target, scope))
 
     @_catch
     def do_t(self, refid):
         """\
-        r <target>
+        t <target>
         Get a target name for a refid.
         """
         print(self.db.refid_to_target(refid))
