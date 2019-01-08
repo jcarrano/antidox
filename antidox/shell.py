@@ -181,18 +181,37 @@ class Shell(cmd.Cmd):
     @_catch
     def do_n(self, kind_name):
         """\
-        n [<kind>] <name>
+        n [<kind>] <name> ["in" <scope>]
         Get a refid with a name and of a kind (optional).
         """
-        try:
-            kind_s, name = kind_name.split()
-        except ValueError:
-            kind = None
-            name = kind_name
-        else:
-            kind = doxy.Kind.from_attr(kind_s)
 
-        print(self.db.resolve_name(kind, name))
+        args = kind_name.split()
+
+        if len(args) == 1:
+            kind_s = None
+            scope = None
+            name = args[0]
+            in_ = "in"
+        elif len(args) == 2:
+            kind_s, name = args
+            scope = None
+            in_ = "in"
+        elif len(args) == 3:
+            kind_s = None
+            name, in_, scope = args
+        elif len(args) == 4:
+            kind_s, name, in_, scope = args
+        else:
+            print('Too many arguments')
+            return
+
+        if in_.lower() != "in":
+            print('Invalid syntax (expected "in <scope>")')
+            return
+
+        kind = doxy.Kind.from_attr(kind_s) if kind_s else None
+
+        print(self.db.resolve_name(kind, name, scope))
 
     def _print_results(self, rs):
         """Pretty print a list of SearchResults"""

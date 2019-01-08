@@ -744,20 +744,24 @@ class DoxyDB:
         More than one result will trigger an AmbiguousTarget exception.
         Less than one, and InvalidTarget.
 
-        Ambiguity can be saved by providing a scope similar to `resolve_target`
-        (currently not implemented.)
+        Ambiguity can be saved by providing a scope similar to `resolve_target`.
         """
 
-        if kind:
-            cur = self._db_conn.execute(
-              """SELECT prefix, id FROM elements WHERE kind = ? AND name = ?""",
-              (kind, name))
-        else:
-            cur = self._db_conn.execute(
-              """SELECT prefix, id FROM elements WHERE name = ?""",
-              (name,))
+        scope_prefix, scope_id = RefId(scope) if scope else ("", "")
 
-        return self._cur_to_refid(cur, (kind, name))
+        cur = self._db_conn.execute(
+        """SELECT MAX(h.p_prefix = :scope_prefix AND h.p_id = :scope_id)
+                AS in_scope, e.prefix AS prefix, e.id AS id
+        FROM elements as e LEFT JOIN hierarchy as h
+          ON h.prefix = e.prefix AND h.id = e.id
+        WHERE (:ignore_kind OR e.kind = :kind) AND e.name = :name
+        GROUP BY e.prefix, e.id
+        ORDER BY in_scope DESC
+        """,
+        {"scope_prefix": scope_prefix, "scope_id": scope_id,
+        "ignore_kind": not bool(kind), "kind": kind, "name": name})
+
+        return self._cur_to_refid(cur, (kind, name), scope is not None)
 
     @_refid_str
     def get_tree(self, refid):
