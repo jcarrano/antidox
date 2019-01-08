@@ -93,6 +93,10 @@ class Shell(cmd.Cmd):
         else:
             return line
 
+    def emptyline(self):
+        # do not repeat the last command.
+        pass
+
     def do_EOF(self, _):
         print()
         return True
@@ -124,7 +128,7 @@ class Shell(cmd.Cmd):
 
     def do_new(self, xml_dir):
         """\
-        new <doxy xml dir>
+        new <doxy xmCmd.emptyline()l dir>
         Read an XML directory and create a database. Old DB is discarded."""
         try:
             _f = lambda: doxy.DoxyDB(xml_dir)
