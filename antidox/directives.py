@@ -64,14 +64,21 @@ def resolve_refstr(env, ref_str):
 
     target = ref_spec['target']
 
+    scope_stack = env.ref_context.setdefault('doxy:refid', [])
+
+    try:
+        scope = scope_stack[-1]
+    except IndexError:
+        scope = 0
+
     db = env.antidox_db
 
     if target:
-        ref = db.resolve_target(target)
+        ref = db.resolve_target(target, scope)
     else:
         kind_s = ref_spec['kind']
         ref = db.resolve_name(kind_s and doxy.Kind.from_attr(kind_s),
-                              ref_spec['name'])
+                              ref_spec['name'], scope)
 
     return ref
 
@@ -319,21 +326,27 @@ class DoxyExtractor(Directive):
         else:
             ref = resolve_refstr(self.env, arg0)
 
-        nodes, special = self.run_reference(ref)
+        context_stack = self.env.ref_context['doxy:refid']
+        context_stack.append(ref)
 
-        ev_args = (ref, self.options)
-        inclusion_list = (self.env.app.emit_firstresult(
-                            "antidox-include-children", *ev_args)
-                          or default_inclusion_policy(self.env.app, *ev_args)
-                          or ())
+        try:
+            nodes, special = self.run_reference(ref)
 
-        this_directive = type(self)
+            ev_args = (ref, self.options)
+            inclusion_list = (self.env.app.emit_firstresult(
+                                "antidox-include-children", *ev_args)
+                              or default_inclusion_policy(self.env.app, *ev_args)
+                              or ())
 
-        nodes_to_insert = (internal_node
-                           for refid, options in inclusion_list
-                           for internal_node in this_directive(
-                               'doxy:c', [refid], options, [], self.lineno,
-                               0, "", self.state, self.state_machine).run())
+            this_directive = type(self)
+
+            nodes_to_insert = (internal_node
+                               for refid, options in inclusion_list
+                               for internal_node in this_directive(
+                                   'doxy:c', [refid], options, [], self.lineno,
+                                   0, "", self.state, self.state_machine).run())
+        finally:
+            context_stack.pop()
 
         # just in case the elements produced not output, it should not be an
         # error.
