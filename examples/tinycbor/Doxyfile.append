@@ -1,0 +1,10 @@
+# Extra additions to tinycbor's doxyfile, so that we can generate XML.
+
+OUTPUT_DIRECTORY       = ../../
+
+GENERATE_HTMLHELP      = NO
+GENERATE_CHI           = NO
+GENERATE_XML           = YES
+GENERATE_HTML          = NO
+
+WARN_LOGFILE =
