@@ -134,7 +134,7 @@
         </desc>
     </xsl:template>
 
-    <!-- doxygen does not encapsulate a header and it's content in a container,
+    <!-- doxygen does not encapsulate a header and its content in a container,
     instead it just intercalates both. See the following post to understand
     what we are doing here:
     https://stackoverflow.com/questions/2165566/xslt-select-following-sibling-until-reaching-a-specified-tag

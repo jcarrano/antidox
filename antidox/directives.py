@@ -53,9 +53,28 @@ Capture groups:
     The name if the string is kind[name] or [name] (i.e. not a target).
 """
 
+def _get_current_scope(env):
+    """Get the refid that is being currently documented. Also, create the scope
+    stack it it does not exist."""
+    scope_stack = env.ref_context.setdefault('doxy:refid', [])
+
+    try:
+        scope = scope_stack[-1]
+    except IndexError:
+        scope = 0
+
+    return scope
+
 
 def resolve_refstr(env, ref_str):
-    """Transform a reference string (see :py:data:`ENTITY_RE`) into a RefId"""
+    """Transform a reference string (see :py:data:`ENTITY_RE`) into a RefId.
+
+    Returns
+    -------
+
+    ref: RefId for the element
+    ref_spec: re.Match object, the result of parsing ref_str.
+    """
 
     ref_spec = ENTITY_RE.fullmatch(ref_str)
 
@@ -64,12 +83,7 @@ def resolve_refstr(env, ref_str):
 
     target = ref_spec['target']
 
-    scope_stack = env.ref_context.setdefault('doxy:refid', [])
-
-    try:
-        scope = scope_stack[-1]
-    except IndexError:
-        scope = 0
+    scope = _get_current_scope(env)
 
     db = env.antidox_db
 
@@ -80,7 +94,7 @@ def resolve_refstr(env, ref_str):
         ref = db.resolve_name(kind_s and doxy.Kind.from_attr(kind_s),
                               ref_spec['name'], scope)
 
-    return ref
+    return ref, ref_spec
 
 
 class _Universal:
@@ -324,7 +338,7 @@ class DoxyExtractor(Directive):
         if isinstance(arg0, doxy.RefId):
             ref = arg0
         else:
-            ref = resolve_refstr(self.env, arg0)
+            ref = resolve_refstr(self.env, arg0)[0]
 
         context_stack = self.env.ref_context['doxy:refid']
         context_stack.append(ref)
@@ -363,11 +377,15 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """Create a cross reference for a doxygen object, given a human-readable
     target."""
 
-    # FIXME: support kind[name] syntax
+    # FIXME: this is not working for groups. Idea how to fix:
+    # For internal/template use: the role can be given directly as a refid string,
+    # by prefixing with "=". This is necessary to convert from doxygen references
+    # to Sphinx xref, as in sphinx C language element must use ``refdomain="c"``
+    # but references to files or groups do not.
+    # Also, use XRefRole.
 
-    db = inliner.document.settings.env.antidox_db
     try:
-        ref = db.resolve_target(text)
+        ref, match = resolve_refstr(inliner.document.settings.env, text)
     except (doxy.AmbiguousTarget, doxy.InvalidTarget) as e:
         msg = inliner.reporter.error(e.args[0], line=lineno)
         prb = inliner.problematic(rawtext, rawtext, msg)
@@ -376,7 +394,11 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     node = addnodes.pending_xref(rawsource=rawtext, reftarget=str(ref),
                                  refdomain='c', reftype='any')
     # FIXME: use a prettier formatting
-    node += Text(text, text)
+    linktext = (text if match["target"]
+                else "{} ({})".format(match["name"], match["kind"]) if match["kind"]
+                else match["name"])
+
+    node += Text(linktext, text)
 
     return [node], []
 

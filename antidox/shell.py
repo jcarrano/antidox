@@ -36,7 +36,7 @@ def _catch(f):
     def _f(self, line):
         try:
             return f(self, line)
-        except doxy.RefError as e:
+        except (doxy.RefError, doxy.DoxyFormatError) as e:
             print("\n".join(str(a) for a in e.args))
 
     return _f
@@ -170,6 +170,10 @@ class Shell(cmd.Cmd):
         r <target> [<scope>]
         Get the refid of a target.
         """
+        if not target_and_scope:
+            print("You must provide a refid")
+            return
+
         target, *maybe_scope = target_and_scope.split()
         scope = maybe_scope[0] if maybe_scope else None
         print(self.db.resolve_target(target, scope))
@@ -180,6 +184,10 @@ class Shell(cmd.Cmd):
         t <target>
         Get a target name for a refid.
         """
+        if not refid:
+            print("You must provide a refid")
+            return
+
         print(self.db.refid_to_target(refid))
 
     @_catch
