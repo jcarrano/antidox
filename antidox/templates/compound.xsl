@@ -109,6 +109,7 @@
     <xsl:template match="/compounddef[briefdescription//text() and (@kind = 'group' or @kind = 'file')]">
         <section>
         <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
+        <xsl:attribute name="names"><xsl:value-of select="@id"/>|<xsl:value-of select="compoundname"/>[<xsl:value-of select="@kind"/>]</xsl:attribute>
         <title><xsl:apply-templates select="briefdescription"/></title>
         <!-- Catch all that is outside a heading -->
         <xsl:apply-templates select="detaileddescription/para[not(text()[normalize-space()])]/child::*[not(preceding::heading or self::heading)]|

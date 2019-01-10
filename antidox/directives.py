@@ -12,7 +12,7 @@ import re
 
 from lxml import etree as ET
 from docutils.parsers.rst import Directive, directives
-from docutils.nodes import Text
+from docutils.nodes import Text, Structural
 from sphinx.locale import _ as _locale
 from sphinx.domains import Domain
 from sphinx import addnodes
@@ -289,6 +289,11 @@ class DoxyExtractor(Directive):
                     node += Text(elem.text, elem.text)
 
                 curr_element.append(node)
+
+                # FIXME: this smells hacky
+                if isinstance(node, Structural) and node['ids']:
+                    self.state.document.note_explicit_target(node)
+
                 curr_element = node
             else:
                 if isinstance(curr_element, PlaceHolder):
@@ -391,8 +396,22 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
         prb = inliner.problematic(rawtext, rawtext, msg)
         return [prb], [msg]
 
+    kind = inliner.document.settings.env.antidox_db.get(ref)['kind']
+
+    try:
+        reftype = inliner.document.settings.env.antidox_db.guess_desctype(ref)
+    except ValueError:
+        # if there is no type, it means it is a construct that does not fit in
+        # the C domain and therefore it will be a cross reference in std.
+        refdomain='std'
+        reftype='ref'
+    else:
+        refdomain='c'
+
     node = addnodes.pending_xref(rawsource=rawtext, reftarget=str(ref),
-                                 refdomain='c', reftype='any')
+                                 refdomain=refdomain, reftype=reftype, refexplicit=False,
+                                 refdoc=inliner.document.settings.env.docname,
+                                 refwarn=True)
     # FIXME: use a prettier formatting
     linktext = (text if match["target"]
                 else "{} ({})".format(match["name"], match["kind"]) if match["kind"]

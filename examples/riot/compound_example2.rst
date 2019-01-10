@@ -6,6 +6,8 @@ This is a test of a cross referencing role:
 
 - In target format: :doxy:r:`be_uint16_t::u16`.
 - In name format :doxy:r:`[net_gnrc]`, or with a kind too, :doxy:r:`struct[ipv6_hdr_t]`.
+- Old references: :ref:`net_gnrc[group]`
+- Where does this lead to? :doxy:r:`lua_riot_newstate`
 
 .. doxy:c:: lua_riot_newstate
 
