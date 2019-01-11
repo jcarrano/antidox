@@ -8,6 +8,7 @@ This is the unofficial documentation for `riot`_.
    :caption: Contents:
 
    group_example
+   core_msg
    compound_example2
    struct_example
    union_example

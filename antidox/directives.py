@@ -12,7 +12,8 @@ import re
 
 from lxml import etree as ET
 from docutils.parsers.rst import Directive, directives
-from docutils.nodes import Text, Structural
+from docutils.nodes import Text, Structural, literal
+from sphinx.util.nodes import split_explicit_title
 from sphinx.locale import _ as _locale
 from sphinx.domains import Domain
 from sphinx import addnodes
@@ -35,12 +36,16 @@ class InvalidEntity(sphinx.errors.SphinxError):
     pass
 
 
-ENTITY_RE = re.compile(r"(?:(?P<kind>\w+)?\[(?P<name>\w+)\])|(?P<target>[^[]\S*)")
+ENTITY_RE = re.compile(r"(?:!(?P<refid>\w+))|(?:(?P<kind>\w+)?\[(?P<name>\w+)\])|(?P<target>[^[]\S*)")
 """Regular expression for references to entities.
 
-Catches either target strings (a/b.h::c) or kind[name] strings.
+Catches either target strings (a/b.h::c), kind[name] strings or refid strings
+(prefixed with an exclamation mark "!").
 
 Capture groups:
+
+``refid``:
+    If the string starts with "!", then returns the rest of it, unmodified.
 
 ``target``
     The target string if the reference is a antidox.doxy.Target-compatible
@@ -68,6 +73,7 @@ def _get_current_scope(env):
 
 def resolve_refstr(env, ref_str):
     """Transform a reference string (see :py:data:`ENTITY_RE`) into a RefId.
+    If ref_str is already a refid, it is still validated.
 
     Returns
     -------
@@ -81,14 +87,19 @@ def resolve_refstr(env, ref_str):
     if ref_spec is None:
         raise InvalidEntity("Cannot parse entity: %s" % ref_str)
 
-    target = ref_spec['target']
-
     scope = _get_current_scope(env)
 
     db = env.antidox_db
 
+    target = ref_spec['target']
+    refid_s = ref_spec['refid']
+
     if target:
         ref = db.resolve_target(target, scope)
+    elif refid_s:
+        # just validate that the reference is valid
+        ref = doxy.RefId(refid_s)
+        db.get(ref)
     else:
         kind_s = ref_spec['kind']
         ref = db.resolve_name(kind_s and doxy.Kind.from_attr(kind_s),
@@ -380,44 +391,64 @@ class DoxyExtractor(Directive):
 
 def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     """Create a cross reference for a doxygen object, given a human-readable
-    target."""
+    target.
 
-    # FIXME: this is not working for groups. Idea how to fix:
-    # For internal/template use: the role can be given directly as a refid string,
-    # by prefixing with "=". This is necessary to convert from doxygen references
-    # to Sphinx xref, as in sphinx C language element must use ``refdomain="c"``
-    # but references to files or groups do not.
-    # Also, use XRefRole.
+    The target is interpreted by resolve_refstr. It can be prefixed by ``~``,
+    which causes target-strings to drop the path.
+    """
+
+    db = inliner.document.settings.env.antidox_db
+
+    is_explicit, title, _target = split_explicit_title(text.strip())
+
+    title = title.strip()
+    _target=_target.strip()
+
+    remove_path = _target.startswith("~")
+
+    target = _target[1:] if remove_path else _target
 
     try:
-        ref, match = resolve_refstr(inliner.document.settings.env, text)
-    except (doxy.AmbiguousTarget, doxy.InvalidTarget) as e:
+        ref, match = resolve_refstr(inliner.document.settings.env, target)
+    except doxy.RefError as e:
         msg = inliner.reporter.error(e.args[0], line=lineno)
         prb = inliner.problematic(rawtext, rawtext, msg)
         return [prb], [msg]
 
-    kind = inliner.document.settings.env.antidox_db.get(ref)['kind']
-
     try:
-        reftype = inliner.document.settings.env.antidox_db.guess_desctype(ref)
+        reftype = db.guess_desctype(ref)
     except ValueError:
         # if there is no type, it means it is a construct that does not fit in
         # the C domain and therefore it will be a cross reference in std.
-        refdomain='std'
-        reftype='ref'
+        refdomain = 'std'
+        reftype = 'ref'
+        innernode = Text
     else:
-        refdomain='c'
+        refdomain = 'c'
+        innernode = literal
 
     node = addnodes.pending_xref(rawsource=rawtext, reftarget=str(ref),
-                                 refdomain=refdomain, reftype=reftype, refexplicit=False,
+                                 refdomain=refdomain, reftype=reftype, refexplicit=is_explicit,
                                  refdoc=inliner.document.settings.env.docname,
                                  refwarn=True)
-    # FIXME: use a prettier formatting
-    linktext = (text if match["target"]
-                else "{} ({})".format(match["name"], match["kind"]) if match["kind"]
-                else match["name"])
+    if not is_explicit:
+        # FIXME: make this fomatting customizable
+        if match["name"]:
+            linktext = match["name"]
+        else:
+            doxy_target = (doxy.Target(match["target"]) if match["target"]
+                           else db.refid_to_target(match["refid"]))
+            linktext = doxy_target.name if remove_path else str(doxy_target)
 
-    node += Text(linktext, text)
+        if reftype == "function":
+            linktext += "()"
+
+        if match["kind"]:
+            linktext += " ({})".format(match["kind"])
+
+        node += innernode(text, linktext)
+    else:
+        node += Text(title, title)
 
     return [node], []
 

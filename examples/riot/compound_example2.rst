@@ -8,6 +8,8 @@ This is a test of a cross referencing role:
 - In name format :doxy:r:`[net_gnrc]`, or with a kind too, :doxy:r:`struct[ipv6_hdr_t]`.
 - Old references: :ref:`net_gnrc[group]`
 - Where does this lead to? :doxy:r:`lua_riot_newstate`
+- Trying a explicit title :doxy:r:`here is a macro <lua_builtin.h::WEAK>`
+- Use a tilde (``~``) to remove the path component :doxy:r:`~msg_avail`
 
 .. doxy:c:: lua_riot_newstate
 

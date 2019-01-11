@@ -172,10 +172,10 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
     </xsl:template>
 
     <xsl:template match="ref">
-        <pending_xref refdomain='c' reftype='any'>
-        <xsl:attribute name="reftarget"><xsl:value-of select="@refid"/></xsl:attribute>
-        <xsl:value-of select="."/>
-        </pending_xref>
+        <antidox:interpreted role="doxy:r">
+        <xsl:if test="@kindref!='member'"><xsl:value-of select="."/><xsl:text> &lt;</xsl:text></xsl:if>
+        !<xsl:value-of select="@refid"/><xsl:if test="@kindref!='member'"><xsl:text>&gt;</xsl:text></xsl:if>
+        </antidox:interpreted>
     </xsl:template>
 
     <xsl:template match="orderedlist">

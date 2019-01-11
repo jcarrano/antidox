@@ -1,6 +1,8 @@
 User Guide
 ==========
 
+.. py:currentmodule:: antidox
+
 Concepts
 --------
 
@@ -64,6 +66,7 @@ Directives and roles are contained in an `doxy` domain.
     .. doxy:c:: kind[name]
 
   Where ``kind`` is optional- if it is not given, then ``name`` should be unique.
+  See :py:data:`directives.ENTITY_RE` for details on the reference format.
 
   There is nothing hardcoded about the reST nodes that get created. Everything,
   including index and cross reference creation is controlled by the XSL template,
@@ -104,7 +107,18 @@ Directives and roles are contained in an `doxy` domain.
 
 .. rst:role:: doxy:r
 
-  Insert a cross reference to the given target's documentation.
+  Insert a cross reference to an entity documented with :rst:dir:`doxy:c`. As
+  with other Sphinx cross-reference roles, the link can be assigned an explicit
+  title by using the syntax ``:ref:`Link title <reference>`.``
+
+  The format for the reference is the same as in :rst:dir:`doxy:c`. Additionally,
+  a :py:class:`Doxygen refid <doxy.RefId>` can be directly specified by
+  prefixing it with `!`. This is meant to facilitate conversion of Doxygen's
+  `<ref>` nodes to Sphinx references.
+
+  If an explicit link title is not given, it is derived from the reference. If
+  the reference is a target and it is prefixed by `~` (tilde) then the path
+  component will not be part of the title.
 
 Configuration variables
 -----------------------
