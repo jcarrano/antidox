@@ -85,8 +85,6 @@ Directives and roles are contained in an `doxy` domain.
     Do not render the text of the documentation. This is useful if you want
     to replace the description with your own text in the reST source.
 
-  To be implemented:
-
   .. _children-option:
 
   ``children``
