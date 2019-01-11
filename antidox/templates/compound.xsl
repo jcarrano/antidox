@@ -152,7 +152,7 @@
     <xsl:template match="detaileddescription/para/heading">
         <xsl:variable name="heading" select="generate-id(.)"/>
         <xsl:variable name="level" select="number(@level)"/>
-        <section> <!-- TODO: add section ID (how do we handle duplicates?) -->
+        <section antidox:content="true"> <!-- TODO: add section ID (how do we handle duplicates?) -->
             <xsl:attribute name="ids">c.<xsl:value-of select="ancestor::*/@id"/>-<xsl:call-template name="string-to-ids"/></xsl:attribute>
             <!-- Small workaround for trailing whitespace in titles -->
             <title><xsl:value-of select="normalize-space(.)"/></title>

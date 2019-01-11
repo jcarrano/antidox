@@ -29,7 +29,7 @@ __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
 # Generic attributes that are handled by _etree_to_sphinx and should be removed
 # before creating a node.
-_GLOBAL_ATTRIBUTES = {"{antidox}l", "{antidox}definition"}
+_GLOBAL_ATTRIBUTES = {"{antidox}l", "{antidox}definition", "{antidox}content"}
 
 
 class InvalidEntity(sphinx.errors.SphinxError):
@@ -227,7 +227,7 @@ class DoxyExtractor(Directive):
 
     @staticmethod
     def _iterwalk_with_hiding(etree, hidedoc=False, hidedef=False):
-        """Iterator around ET.iterwalk that transparently skips desc_content
+        """Iterator around ET.iterwalk that transparently skips {antidox}content
         and {antidox}definition based on hidedoc and hidedef.
 
         Returns
@@ -241,7 +241,8 @@ class DoxyExtractor(Directive):
 
         for action, elem in et_iter:
             if action == "start":
-                if hidedoc and elem.tag == 'desc_content':
+                iscontent_default = "true" if elem.tag == 'desc_content' else "false"
+                if hidedoc and elem.attrib.get("{antidox}content", iscontent_default) == 'true':
                     et_iter.skip_subtree()
                     skipped = True
                 elif hidedef and elem.attrib.get("{antidox}definition") == 'true':
