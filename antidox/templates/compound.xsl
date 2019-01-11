@@ -171,7 +171,11 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         <desc_name><xsl:text> </xsl:text><xsl:value-of select="." /></desc_name>
     </xsl:template>
 
+    <!-- Using doxy:r here instead of directly inserting a pending_xref allows
+         more robust handling of the different kind of references in doxygen. -->
     <xsl:template match="ref">
+        <!-- FIXME: some compounds should be not be given explicit titles. Maybe
+             no reference should be given a explicit title??? -->
         <antidox:interpreted role="doxy:r">
         <xsl:if test="@kindref!='member'"><xsl:value-of select="."/><xsl:text> &lt;</xsl:text></xsl:if>
         !<xsl:value-of select="@refid"/><xsl:if test="@kindref!='member'"><xsl:text>&gt;</xsl:text></xsl:if>

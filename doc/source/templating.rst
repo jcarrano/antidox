@@ -89,11 +89,12 @@ children that result from the :ref:`children option <children-option>` and
 :ref:`no-children option <no-children-option>`. By default children subtrees are
 appended to the last root element resulting from the transform.
 
-Generating directives
----------------------
+Generating roles and directives
+-------------------------------
 
 Directives in reST do not have their own nodes. Rather, they generate nodes that
-are then inserted in the document.
+are then inserted in the document. Interpreted text roles such as cross
+references behave similarly.
 
 .. _antidox-directive-elem:
 
@@ -101,7 +102,7 @@ are then inserted in the document.
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 This element calls a directive. reST directives are not nodes: they generate
-nodes that are added to the tree. This element can have the following parameters:
+nodes that are added to the tree. This element can have the following attributes:
 
 ``antidox:name``
   Name of the directive to invoke ("directive type" in reST terminology.)
@@ -119,6 +120,16 @@ for that directive.
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This element's TEXT is the content of the containing directive.
+
+``<antidox:interpreted>``
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Inserts an interpreted text role (such as :rst:role:`ref`, :rst:role:`c:func`,
+etc). The contents of the node (which must consist only of text, no child nodes)
+is passed as the `text` argument to the interpreted role.
+
+There is a single attribute, ``role``, which species the name if the role
+(including the domain if necessary.)
 
 Other
 -----
