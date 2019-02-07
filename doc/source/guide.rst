@@ -175,8 +175,14 @@ Events
   ``refid`` should be a doxy.RefId object and options a dictionary which will
   set the options for the nested :rst:dir:`doxy:c` directive.
 
-  The default behavior is implemented by :py:func:`directive.default_inclusion_policy`.
+  The default behavior is implemented by :py:func:`directives.default_inclusion_policy`.
 
   :param app: the Sphinx application object
   :param this: refid for the object currently being documented.
   :param options: dictionary with the options given to the directive.
+
+  For example, you can use this event to exclude struct members that start with
+  and underscore:
+
+  .. literalinclude:: ../../examples/riot/conf.py
+   :lines: 166-182,195-196
