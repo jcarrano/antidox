@@ -178,5 +178,17 @@ def struct_no_undescore(app, this, options):
                 if not _SINGLE_UNDERSCORE.fullmatch(db.get(k)['name'])]
 
 
+def group_no_files(app, this, options):
+    """Exclude files from groups' documentations"""
+    db = app.env.antidox_db
+
+    if db.get(this)['kind'] == antidox.doxy.Kind.GROUP:
+        pre_inclusion = antidox.directives.default_inclusion_policy(app, this, options)
+
+        return pre_inclusion and [(k, v) for k, v in pre_inclusion
+                                  if db.get(k)['kind'] != antidox.doxy.Kind.FILE]
+
+
 def setup(app):
     app.connect("antidox-include-children", struct_no_undescore)
+    app.connect("antidox-include-children", group_no_files)
