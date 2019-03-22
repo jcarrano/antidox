@@ -20,6 +20,7 @@ import pickle
 import sqlite3
 import timeit
 import re
+import pathlib
 
 from lxml import etree as ET
 
@@ -160,9 +161,23 @@ class Shell(cmd.Cmd):
 
     def do_load_sphinx(self, sphinx_builddir):
         """\
-        load_sphinx <sphinx_project/_build>
-        Load the DB from a pickled Sphinx environment"""
-        pass
+        load_sphinx <sphinx_project/_build> [project_dir]
+        Load the DB from a pickled Sphinx environment.
+        Usually the xml directory is stored as a relative path within the DB
+        instance. The default here is to take it relative to the env's srcdir
+        but that can be overriden y specifying 'project_dir'"""
+        builddir, *maybe_prjdir = sphinx_builddir.split()
+
+        import sphinx.environment
+
+        with open(pathlib.Path(
+                  sphinx_builddir, "doctrees", "environment.pickle"), 'rb') as f:
+            env = sphinx.environment.BuildEnvironment.load(f)
+
+        self.db = env.antidox_db
+
+        base_dir = maybe_prjdir[0] if maybe_prjdir else env.srcdir
+        self.db._xml_dir = pathlib.Path(base_dir, self.db._xml_dir)
 
     @_catch
     def do_r(self, target_and_scope):
