@@ -316,7 +316,7 @@ class DoxyExtractor(Directive):
                 if isinstance(curr_element, DeferredPlaceholder):
                     special[curr_element.tagname] = curr_element
 
-                curr_element = curr_element.parent or root
+                curr_element = curr_element.parent
 
                 if elem.tail:
                     curr_element.append(Text(elem.tail, elem.tail))
