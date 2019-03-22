@@ -72,6 +72,20 @@ class PlaceHolder(PseudoElement):
         self.replace_self(new)
 
 
+class FakeRoot(PlaceHolder, _nodes.Element):
+    """Sometimes it is desired to emit several nodes (a list) from a template.
+    This implementation transforms each doxygen entity as a root node, and
+    because well formed XML can only have one root node, this would be
+    impossible.
+
+    """
+    _name = "fakeroot"
+
+    def replace_placeholder(self, *args):
+        """Replace this element by it's children."""
+        self.replace_self(self.children)
+
+
 class DeferredPlaceholder(PseudoElement, _nodes.Element):
     """Base class for placeholders that are replaced by content that depends on
     the directive contents and options."""

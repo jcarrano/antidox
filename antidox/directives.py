@@ -21,7 +21,8 @@ import sphinx.errors
 
 from . import doxy
 from .xtransform import get_stylesheet
-from .nodes import nodeclass_from_tag, PlaceHolder, DeferredPlaceholder
+from .nodes import (nodeclass_from_tag, PlaceHolder, DeferredPlaceholder,
+                    FakeRoot)
 
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
@@ -274,7 +275,7 @@ class DoxyExtractor(Directive):
             antidox_children
                 placeholder that should be replaced by this element's children.
         """
-        curr_element = []
+        curr_element = FakeRoot()
         root = curr_element
 
         special = {}
@@ -320,7 +321,7 @@ class DoxyExtractor(Directive):
                 if elem.tail:
                     curr_element.append(Text(elem.tail, elem.tail))
 
-        return root, special
+        return root.children, special
 
     def run_reference(self, ref):
         """Convert the doxygen XML of a reference into Sphinx nodes.
@@ -332,6 +333,7 @@ class DoxyExtractor(Directive):
         Returns
         -------
         nodes: List of sphinx nodes.
+        special: a dictionary of special nodes (subclasses of DeferredPlaceholder)
         """
         # TODO: support noindex
 
