@@ -233,7 +233,7 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         </reference>
     </xsl:template>
 
-    <!-- TODO: provide special case for RFC urls using the :rfc: role  -->
+    <!-- Special case for RFC urls using the :rfc: role  -->
     <xsl:template match="ulink[starts-with(@url, 'http://tools.ietf.org/html/rfc')]">
         <xsl:variable name="rfc_n_sect" select="substring-after(@url, 'http://tools.ietf.org/html/rfc')"/>
         <antidox:interpreted role="rfc"><xsl:value-of select="."/><xsl:text> &lt;</xsl:text><xsl:value-of select="$rfc_n_sect"/><xsl:text>&gt;</xsl:text></antidox:interpreted>
@@ -248,7 +248,7 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         <xsl:apply-templates />
     </xsl:template>
 
-    <!-- normal processiong for briefdescription, just go inside -->
+    <!-- normal processiong for briefdescription, just go inside (i.e. dissolve) -->
     <xsl:template match="briefdescription">
         <xsl:apply-templates />
     </xsl:template>
@@ -311,6 +311,8 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         </antidox:directive>
     </xsl:template>
 
+    <!-- Convert a string into something that is safe to use as a docutils ids
+         field. -->
     <xsl:template name="string-to-ids"><xsl:value-of select="
           translate(
             translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ', 'abcdefghijklmnopqrstuvwxyz-'),
