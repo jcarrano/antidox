@@ -155,6 +155,7 @@ def default_inclusion_policy(app, this, options):
 
         inclusion_list = [(ref, {}) for ref, name, kind in all_child_members
                           if name in yes_children
+                          and kind not in doxy.Kind.subordinate()
                           and name not in no_children]
 
         inclusion_list.extend(
