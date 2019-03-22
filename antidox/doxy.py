@@ -75,6 +75,15 @@ class Kind(enum.Enum):
 
         return tuple(cls[k] for k in ("GROUP", "PAGE", "DIR"))
 
+    # FIXME: add  instance methods (like "is_subordinate")
+
+    @classmethod
+    def subordinate(cls):
+        """Return a tuple containing those kinds that are not proper members
+        (i.e. they are not defined by memberdef) but rather are "children" of
+        a member."""
+        return tuple(cls[k] for k in ("ENUMVALUE",))
+
     @classmethod
     def tag_supported(cls, attr):
         """Check if we support a xml "kind" attribute"""
@@ -789,8 +798,10 @@ class DoxyDB:
                 definition_file_base = next(res.refid for res in self.find_parents(refid))
             except StopIteration as e:
                 raise ConsistencyError("Cannot find compound containing %s" % refid) from e
-
-            xpathq = '//memberdef[@id=$id]'
+            # FIXME: this code looks ugly
+            xpathq = ('//memberdef[@id=$id]'
+                      if not refkind in Kind.subordinate()
+                      else '//{}[@id=$id]'.format(refkind.name.lower()))
 
         # TODO: should we cache this?
         fn = os.path.join(self._xml_dir, "{}.xml".format(definition_file_base))

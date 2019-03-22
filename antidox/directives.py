@@ -13,6 +13,7 @@ import re
 from lxml import etree as ET
 from docutils.parsers.rst import Directive, directives
 from docutils.nodes import Text, Structural, literal, Element, paragraph
+from sphinx.util import logging
 from sphinx.util.nodes import split_explicit_title, nested_parse_with_titles
 from sphinx.locale import _ as _locale
 from sphinx.domains import Domain
@@ -26,6 +27,9 @@ from .nodes import (nodeclass_from_tag, PlaceHolder, DeferredPlaceholder,
 
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
+
+
+logger = logging.getLogger(__name__)
 
 
 # Generic attributes that are handled by _etree_to_sphinx and should be removed
@@ -237,6 +241,7 @@ class DoxyExtractor(Directive):
         ("start", "end").
         """
         et_iter = ET.iterwalk(etree, events=("start", "end"))
+
         skipped = False
 
         for action, elem in et_iter:
@@ -278,6 +283,11 @@ class DoxyExtractor(Directive):
         root = curr_element
 
         special = {}
+
+        if etree.getroot() is None:
+            logger.warn("Template produced no elements for %s",
+                        self.arguments[0])
+            return [], special
 
         for action, elem in self._iterwalk_with_hiding(etree, **kwargs):
             if action == "start":
