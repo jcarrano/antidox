@@ -6,6 +6,8 @@
     final output. They are replaced by the doxy:c directive.
 """
 
+import abc
+
 from docutils import nodes as _nodes
 from docutils.parsers.rst import directives, DirectiveError
 from sphinx import addnodes
@@ -14,7 +16,7 @@ __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
 
-class PseudoElementMeta(type):
+class PseudoElementMeta(abc.ABCMeta):
     """Metaclass for all elements which appear in the output of the XSLT filter
     but are not actual reST elements.
 
@@ -22,16 +24,38 @@ class PseudoElementMeta(type):
     """
     tag_map = {}
 
-    def __init__(cls, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __new__(mcls, name, bases, namespace, **kwargs):
+        _name = namespace.pop("_name", None)
+        if _name:
+            namespace.setdefault("tagname",  "antidox_{}".format(_name))
+            namespace.setdefault("TAG_NAME", "{{antidox}}{}".format(_name))
 
-        if cls.TAG_NAME:
-            cls.tag_map[cls.TAG_NAME] = cls
+        cls = super().__new__(mcls, name, bases, namespace, **kwargs)
+
+        if (not isinstance(cls.TAG_NAME, property)
+            or not cls.TAG_NAME.__isabstractmethod__):
+            mcls.tag_map[cls.TAG_NAME] = cls
+
+        return cls
 
 
 class PseudoElement(metaclass=PseudoElementMeta):
-    """Base class for elements that get replaced by the "c" directive."""
-    TAG_NAME = None
+    """Base class for elements that get replaced by the "c" directive.
+
+    The metaclass ensures that if ``_name`` is set (to the tag name without
+    namespace) TAG_NAME and tagname will be set automatically.
+    """
+    @property
+    @abc.abstractmethod
+    def TAG_NAME(self):
+        """Tag name for the XML transformer. Should be of the form
+        {antidox}name to be correctly namespaced (it will result in a tag
+        named <antidox:name>."""
+
+    @property
+    @abc.abstractmethod
+    def tagname(self):
+        """Tag name for docutils."""
 
 
 class PlaceHolder(PseudoElement):
@@ -54,16 +78,18 @@ class DeferredPlaceholder(PseudoElement, _nodes.Element):
 
 
 class Children(DeferredPlaceholder):
-    TAG_NAME = "{antidox}children"
-    tagname = "antidox_children"
+    _name = "children"
+
+
+class UserContent(DeferredPlaceholder):
+    """Placeholder for the content given in the directive's body."""
+    _name = "usercontent"
 
 
 class Index(PlaceHolder, _nodes.Inline, _nodes.TextElement):
     """Add a cross-referenceable index entry to the parent of this element.
     """
-
-    TAG_NAME = "{antidox}index"
-    tagname = "antidox_index"
+    _name = "index"
     # ~ ``(entrytype, entryname,
     # ~ target, ignored, key)``.
 
@@ -107,8 +133,7 @@ class Index(PlaceHolder, _nodes.Inline, _nodes.TextElement):
 
 
 class Interpreted(PlaceHolder, _nodes.Element):
-    TAG_NAME = "{antidox}interpreted"
-    tagname = "interpreted"
+    _name = "interpreted"
 
     def run_directive(self, lineno, state, state_machine):
         text = self[0].astext()
@@ -128,13 +153,11 @@ class Interpreted(PlaceHolder, _nodes.Element):
 
 
 class DirectiveArg(PseudoElement, _nodes.Text):
-    TAG_NAME = "{antidox}directive-argument"
-    tagname = "argument"
+    _name = "directive-argument"
 
 
 class DirectiveContent(PseudoElement, _nodes.Text):
-    TAG_NAME = "{antidox}directive-content"
-    tagname = "content"
+    _name = "directive-content"
 
 
 class DirectivePlaceholder(PlaceHolder, _nodes.Element):
@@ -152,8 +175,7 @@ class DirectivePlaceholder(PlaceHolder, _nodes.Element):
     <antidox:directive-argument> Arguments to the directive.
     <antidox:directive-content> Text contents of the directive.
     """
-    TAG_NAME = "{antidox}directive"
-    tagname = "directive_pholder"
+    _name = "directive"
 
     def run_directive(self, lineno, state, state_machine):
         """Execute the directive generate a list of nodes."""
@@ -167,8 +189,10 @@ class DirectivePlaceholder(PlaceHolder, _nodes.Element):
         options = {k: directive_class.option_spec[k](v) for k, v in raw_options
                    if not k.startswith("{antidox}")}
 
-        arguments = [n.astext() for n in self.children if n.tagname == "argument"]
-        content = [n.astext() for n in self.children if n.tagname == "content"]
+        arguments = [n.astext() for n in self.children
+                     if n.tagname == "antidox_directive-argument"]
+        content = [n.astext() for n in self.children
+                   if n.tagname == "antidox_directive-content"]
 
         # what about this?
         # content_offset = 0
