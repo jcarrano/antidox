@@ -13,6 +13,8 @@ This is a test of a cross referencing role:
 
 .. doxy:c:: lua_riot_newstate
 
+   This is a nice function for **doing stuff**.
+
 .. doxy:c:: LUAR_ERRORS
 
 .. doxy:c:: GNRC_NETAPI_MSG_TYPE_RCV
