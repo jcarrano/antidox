@@ -12,8 +12,8 @@ import re
 
 from lxml import etree as ET
 from docutils.parsers.rst import Directive, directives
-from docutils.nodes import Text, Structural, literal
-from sphinx.util.nodes import split_explicit_title
+from docutils.nodes import Text, Structural, literal, Element, paragraph
+from sphinx.util.nodes import split_explicit_title, nested_parse_with_titles
 from sphinx.locale import _ as _locale
 from sphinx.domains import Domain
 from sphinx import addnodes
@@ -185,7 +185,6 @@ class DoxyExtractor(Directive):
     hidedoc: hide doxygen's documentation.
     """
 
-    # TODO: do something with content
     has_content = True
     required_arguments = 1
     optional_arguments = 0
@@ -323,6 +322,52 @@ class DoxyExtractor(Directive):
 
         return root.children, special
 
+    def _process_content(self, nodes, special):
+        """Parse the directive content and place it in the appropiate nodes.
+
+        Parameters
+        ----------
+        nodes, special: the result of run_reference.
+
+        Returns
+        -------
+        nodes: new list of nodes
+        """
+        uccontent = special.get("antidox_usercontent")
+
+        assert nodes if uccontent else True
+
+        # If there is a antidox_usercontent node, it should be REPLACED by
+        # the user content, but if not, we must find a default placement node
+        # and NEST the user content UNDER that node.
+        if uccontent:
+            # make a temporary container
+            content_container = Element()
+        elif not nodes:
+            # This may give weird unexpected results when children are added.
+            content_container = paragraph()
+            nodes = [content_container]
+        else:
+            child_index = nodes[0].first_child_matching_class(
+                                                        addnodes.desc_content)
+            content_container = (nodes[0][child_index]
+                                 if child_index is not None else nodes[-1])
+
+        if self.content:
+            nested_parse_with_titles(self.state, self.content,
+                                     content_container)
+
+        if uccontent:
+            # handle the case where antidox_usercontent is at the top level
+            if uccontent.parent:
+                uccontent.replace_self(content_container.children)
+            else:
+                uc_index = nodes.index(uccontent)
+                nodes[uc_index:uc_index+1] = content_container.children
+            assert(nodes if self.content else True)
+
+        return nodes
+
     def run_reference(self, ref):
         """Convert the doxygen XML of a reference into Sphinx nodes.
 
@@ -364,6 +409,8 @@ class DoxyExtractor(Directive):
 
         try:
             nodes, special = self.run_reference(ref)
+
+            nodes = self._process_content(nodes, special)
 
             ev_args = (ref, self.options)
             inclusion_list = (self.env.app.emit_firstresult(

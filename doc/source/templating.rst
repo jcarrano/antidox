@@ -80,16 +80,13 @@ antidox-specific (pseudo)elements
 ``<antidox:usercontent>``
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. note:
-
-  Not yet implemented
-
 Placeholder for user-defined content, that is, content given in the body of the
 rst:dir:`doxy:c` directive.
 
-.. todo:
+If this element is not present, antidox will try to nest the directive body
+under a ``docutils.nodes.desc_content`` node. If none is found, it will be
+placed as a child of the last top level element.
 
-  document where content is placed by default.
 
 ``<antidox:children>``
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -98,6 +95,7 @@ Placeholder for child elements. This node will be replaced by the subtrees of
 children that result from the :ref:`children option <children-option>` and
 :ref:`no-children option <no-children-option>`. By default children subtrees are
 appended to the last root element resulting from the transform.
+
 
 Generating roles and directives
 -------------------------------
