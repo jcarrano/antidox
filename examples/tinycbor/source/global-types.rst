@@ -1,0 +1,3 @@
+
+.. doxy:c:: [CborGlobals]
+    :children:

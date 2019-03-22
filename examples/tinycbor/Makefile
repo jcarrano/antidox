@@ -1,8 +1,16 @@
 
+SPHINXOPTS    =
+SPHINXBUILD   = sphinx-build
+SOURCEDIR     = source
+BUILDDIR      = _build
 
-.PHONY: doxy-clean clean
+.PHONY: sphinx-clean doxy-clean clean help view html
 
 VERSION=$(file <tinycbor/VERSION)
+
+# Put it first so that "make" without argument is like "make help".
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 xml: Doxyfile.append tinycbor/Doxyfile tinycbor/VERSION
 	cat tinycbor/Doxyfile Doxyfile.append \
@@ -12,8 +20,17 @@ xml: Doxyfile.append tinycbor/Doxyfile tinycbor/VERSION
 doxy-xml: xml
 	$(file >$@,$^)
 
-doxy-clean:
-	rm -r xml
-	rm -r doxy-xml
+sphinx-clean:
+	@$(SPHINXBUILD) -M clean "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-clean: doxy-clean
+doxy-clean:
+	rm -rf xml
+	rm -rf doxy-xml
+
+clean: doxy-clean sphinx-clean
+
+html: xml
+	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+view: html
+	xdg-open _build/html/index.html
