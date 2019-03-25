@@ -177,6 +177,7 @@ def struct_no_undescore(app, this, options):
     if db.get(this)['kind'] == antidox.doxy.Kind.STRUCT:
         pre_inclusion = antidox.directives.default_inclusion_policy(app, this, options)
 
+        # pre_inclusion may be None
         return pre_inclusion and [(k, v) for k, v in pre_inclusion
                 if not _SINGLE_UNDERSCORE.fullmatch(db.get(k)['name'])]
 

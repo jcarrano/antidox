@@ -92,6 +92,8 @@ class DeferredPlaceholder(PseudoElement, _nodes.Element):
 
 
 class Children(DeferredPlaceholder):
+    """This element gets replaced by the documentation of the current entity's
+    children."""
     _name = "children"
 
 

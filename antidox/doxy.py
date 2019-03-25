@@ -341,7 +341,6 @@ class DoxyDB:
     refid: Each element in Doxygen is uniquely defined by a "refid", consisting of a
     string of the form string_part_1id_part.
     """
-    # TODO: Finish writing docstring
     # TODO: check if a file can be used (and shared) instead if ":memory:"
 
     def __init__(self, xml_dir):
@@ -493,8 +492,6 @@ class DoxyDB:
 
     def _read_inner(self, compoundfile):
         """Gather all the inner elements for compounds in a file."""
-
-        # p_refid = None # FIXME: unset p_refid when we leave a compound
 
         for event, elem in _ez_iterparse(compoundfile, ("start",)):
             if elem.tag == "doxygen":

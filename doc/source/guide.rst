@@ -45,8 +45,13 @@ The target for a file has the form ``file_path::*``.
 
 For entities that are not C-language elements (for example, a Doxygen group),
 the "bracket syntax" ``[name]`` or ``kind[name]`` can be used. In the former the
-name must be globally unique, while the latter allows disambiguation by
-specifying the kind.
+name must be unique among all kinds of entities, while the latter allows
+disambiguation by specifying the kind.
+
+Inside a :rst:dir:`doxy:c` directives (i.e, when calling :rst:dir:`doxy:c` or
+:rst:role:`doxy:r` inside the body, or via a a template) the extension will try
+to resolve ambiguous names by prioritizing entities that are children of the
+one currently being documented.
 
 Directives, roles and domains
 -----------------------------
@@ -101,8 +106,8 @@ Directives and roles are contained in an `doxy` domain.
     Exclude the selected children. By default if this option is empty, it forces
     all children to be excluded.
 
-  Children are normally specified by name. The default inclusion behavior can be
-  overridden by responding the :event:`antidox-include-children` event.
+  Children are normally specified by *name*. The default inclusion behavior can
+  be overridden by responding the :event:`antidox-include-children` event.
 
 
 .. rst:role:: doxy:r
@@ -117,8 +122,11 @@ Directives and roles are contained in an `doxy` domain.
   `<ref>` nodes to Sphinx references.
 
   If an explicit link title is not given, it is derived from the reference. If
-  the reference is a target and it is prefixed by `~` (tilde) then the path
-  component will not be part of the title.
+  the reference is prefixed by `~` (tilde) then the path component will not be
+  part of the title (e.g. ``file.h::X::Name`` will render as ``Name``).
+
+  When customizing the template, it is recommended to use this directive to
+  convert Doxygen's ``<ref>`` elements.
 
 Configuration variables
 -----------------------

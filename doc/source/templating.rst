@@ -36,6 +36,8 @@ Some nodes accept a list of values as arguments. XML element attributes, however
 are always string. To work around this issue, antidox allows encoding lists for
 these attributes by using "|" as a separator.
 
+.. _xml-additional
+
 Additional information
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -48,6 +50,13 @@ When creating nodes, the template interpreter in antidox sets the "raw" argument
 to an empty string. Also, all line numbers are set to the line number of the
 directive, for lack of a more meaningful value.
 
+To apply the XSL transformation, the XML element corresponding to the entity
+being documented (e.g. a ``<compounddef>`` or a ``<memberdef>``) is extracted
+from its containing document and the transform is run as if that element was the
+root element. This means XPath expressions may give different results when the
+the same stylesheet is applied to a whole doxygen XML. In addition, an
+:ref:`antidox-fakeroot` may be necessary if many top-level elements are to
+be generated from a single XML node.
 
 antidox-specific attributes
 ---------------------------
@@ -95,6 +104,19 @@ Placeholder for child elements. This node will be replaced by the subtrees of
 children that result from the :ref:`children option <children-option>` and
 :ref:`no-children option <no-children-option>`. By default children subtrees are
 appended to the last root element resulting from the transform.
+
+.. _antidox-fakeroot
+
+``<antidox:fakeroot>``
+~~~~~~~~~~~~~~~~~~~~~~
+
+As described in :ref:`xml-additional`, doxygen XML nodes are extracted to the
+top (root) level before applying the XSL template. The result of a XSL tranform
+must be a valid XML document which means that, normally, one would only be
+able to emit a single (non nested) Sphinx node in a :rst:dir:`doxy:c` directive.
+
+This node allows circumventing this restriction. After the XSLT step all
+``<antidox:fakeroot>`` are "dissolved".
 
 
 Generating roles and directives
