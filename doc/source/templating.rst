@@ -36,7 +36,7 @@ Some nodes accept a list of values as arguments. XML element attributes, however
 are always string. To work around this issue, antidox allows encoding lists for
 these attributes by using "|" as a separator.
 
-.. _xml-additional
+.. _xml-additional:
 
 Additional information
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -105,7 +105,7 @@ children that result from the :ref:`children option <children-option>` and
 :ref:`no-children option <no-children-option>`. By default children subtrees are
 appended to the last root element resulting from the transform.
 
-.. _antidox-fakeroot
+.. _antidox-fakeroot:
 
 ``<antidox:fakeroot>``
 ~~~~~~~~~~~~~~~~~~~~~~
