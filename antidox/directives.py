@@ -424,10 +424,12 @@ class DoxyExtractor(Directive):
             nodes = self._process_content(nodes, special)
 
             ev_args = (ref, self.options)
-            inclusion_list = (self.env.app.emit_firstresult(
+            ev_result = self.env.app.emit_firstresult(
                                 "antidox-include-children", *ev_args)
-                              or default_inclusion_policy(self.env.app, *ev_args)
-                              or ())
+            inclusion_list = (ev_result if ev_result is not None else
+                              (default_inclusion_policy(self.env.app, *ev_args)
+                               or ())
+                              )
 
             this_directive = type(self)
 
