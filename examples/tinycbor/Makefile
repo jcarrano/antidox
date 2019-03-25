@@ -32,5 +32,8 @@ clean: doxy-clean sphinx-clean
 html: xml
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
+sphinx-xml: xml
+	@$(SPHINXBUILD) -M xml "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
 view: html
 	xdg-open _build/html/index.html

@@ -58,8 +58,8 @@
 
     <xsl:template match="/memberdef[@kind='enum']">
         <desc domain="c" noindex="False">
-            <xsl:attribute name="desctype"><xsl:value-of select="type"/></xsl:attribute>
-            <xsl:attribute name="objtype"><xsl:value-of select="type"/></xsl:attribute>
+            <xsl:attribute name="desctype">type</xsl:attribute>
+            <xsl:attribute name="objtype">type</xsl:attribute>
             <desc_signature first="False">
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>

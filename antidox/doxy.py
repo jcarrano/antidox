@@ -828,6 +828,7 @@ class DoxyDB:
     #   doxy.Kind.DIR = 9
 
     _easy_kinds = {
+        Kind.ENUM: 'type',
         Kind.STRUCT: 'type',
         Kind.UNION: 'type',
         Kind.TYPEDEF: 'type',

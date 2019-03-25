@@ -507,7 +507,7 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
         if match["kind"]:
             linktext += " ({})".format(match["kind"])
 
-        node += innernode(text, linktext)
+        node += innernode(linktext, linktext)
     else:
         node += Text(title, title)
 
