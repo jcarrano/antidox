@@ -587,11 +587,11 @@ class DoxyDB:
         # the nodes.
         cur = self._db_conn.execute(
         """WITH RECURSIVE
-            parent (prefix, id) AS (
-                SELECT prefix, id FROM elements
+            parent (level, prefix, id) AS (
+                SELECT 0, prefix, id FROM elements
                     WHERE prefix = ? AND id = ?
                 UNION
-                SELECT elements.prefix, elements.id
+                SELECT parent.level + 1, elements.prefix, elements.id
                 FROM parent
                     INNER JOIN hierarchy
                         ON hierarchy.prefix = parent.prefix AND
@@ -604,6 +604,7 @@ class DoxyDB:
             )
         SELECT name, kind FROM elements INNER JOIN parent
             ON elements.prefix = parent.prefix AND elements.id = parent.id
+        GROUP BY level
 
         """, refid)
 
