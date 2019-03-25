@@ -31,17 +31,23 @@ __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
 
-def _catch(f):
-    """Wrap a function so that it catches DB errors"""
-    @functools.wraps(f)
-    def _f(self, line):
-        try:
-            return f(self, line)
-        except (doxy.RefError, doxy.DoxyFormatError) as e:
-            print("\n".join(str(a) for a in e.args))
+def _catch(*args):
+    """Wrap a function so that it catches errors"""
+    exceptions = args or Exception
 
-    return _f
+    def _catch_decorator(f):
+        @functools.wraps(f)
+        def _f(self, line):
+            try:
+                return f(self, line)
+            except exceptions as e:
+                print(" ".join(str(a) for a in e.args))
 
+        return _f
+
+    return _catch_decorator
+
+_catch_doxy = _catch(doxy.RefError, doxy.DoxyFormatError)
 
 def _any_to_refid(f):
     """Transform a method that takes a refid into one that takes a
@@ -127,38 +133,32 @@ class Shell(cmd.Cmd):
             (SELECT DISTINCT p_prefix, p_id FROM hierarchy)
         """))
 
+    @_catch()
     def do_new(self, xml_dir):
         """\
         new <doxy xmCmd.emptyline()l dir>
         Read an XML directory and create a database. Old DB is discarded."""
-        try:
-            _f = lambda: doxy.DoxyDB(xml_dir)
-            print("DB loaded in %f seconds" % timeit.timeit("self.db=_f()", number=1, globals=locals()))
-        except Exception as e:
-            print("error: ", "".join(e.args))
+        _f = lambda: doxy.DoxyDB(xml_dir)
+        print("DB loaded in %f seconds" % timeit.timeit("self.db=_f()", number=1, globals=locals()))
 
+    @_catch()
     def do_dump(self, filename):
         """\
         dump <filename>
         Dump DB as pickle"""
-        try:
-            with open(filename, "wb+") as f:
-                pickle.dump(self.db, f)
-        except Exception as e:
-            print("error: ", "".join(e.args))
-        else:
-            print("Done")
+        with open(filename, "wb+") as f:
+            pickle.dump(self.db, f)
+        print("Done")
 
+    @_catch()
     def do_restore(self, filename):
         """\
         restore <filename>
         Restore pickled DB"""
-        try:
-            with open(filename, "rb") as f:
-                self.db = pickle.load(f)
-        except Exception as e:
-            print("error: ", "".join(e.args))
+        with open(filename, "rb") as f:
+            self.db = pickle.load(f)
 
+    @_catch()
     def do_load_sphinx(self, sphinx_builddir):
         """\
         load_sphinx <sphinx_project/_build> [project_dir]
@@ -179,7 +179,7 @@ class Shell(cmd.Cmd):
         base_dir = maybe_prjdir[0] if maybe_prjdir else env.srcdir
         self.db._xml_dir = pathlib.Path(base_dir, self.db._xml_dir)
 
-    @_catch
+    @_catch_doxy
     def do_r(self, target_and_scope):
         """\
         r <target> [<scope>]
@@ -193,7 +193,7 @@ class Shell(cmd.Cmd):
         scope = maybe_scope[0] if maybe_scope else None
         print(self.db.resolve_target(target, scope))
 
-    @_catch
+    @_catch_doxy
     def do_t(self, refid):
         """\
         t <target>
@@ -205,7 +205,7 @@ class Shell(cmd.Cmd):
 
         print(self.db.refid_to_target(refid))
 
-    @_catch
+    @_catch_doxy
     def do_n(self, kind_name):
         """\
         n [<kind>] <name> ["in" <scope>]
@@ -245,7 +245,7 @@ class Shell(cmd.Cmd):
         for r, n, k in rs:
             print("{}\t{}\t{}".format(r, k, n))
 
-    @_catch
+    @_catch_doxy
     @_any_to_refid
     def do_get(self, refid):
         """\
@@ -257,7 +257,7 @@ class Shell(cmd.Cmd):
         name, kind = self.db.get(refid)
         print("{}\t{}\t{}".format(refid, kind, name))
 
-    @_catch
+    @_catch_doxy
     @_any_to_refid
     def do_parents(self, refid):
         """\
@@ -268,7 +268,7 @@ class Shell(cmd.Cmd):
         """
         self._print_results(self.db.find_parents(refid))
 
-    @_catch
+    @_catch_doxy
     @_any_to_refid
     def do_children(self, refid):
         """\
@@ -283,7 +283,7 @@ class Shell(cmd.Cmd):
         print("#compounds")
         self._print_results(compounds)
 
-    @_catch
+    @_catch_doxy
     @_any_to_refid
     def do_show(self, refid):
         """\
@@ -305,7 +305,7 @@ class Shell(cmd.Cmd):
 
         print(ET.tostring(root, pretty_print=True, encoding='unicode'))
 
-    @_catch
+    @_catch_doxy
     def do_sty(self, filename):
         """\
         sty [template.xsl]
@@ -315,7 +315,7 @@ class Shell(cmd.Cmd):
 
         self.stylesheet = get_stylesheet(filename)
 
-    @_catch
+    @_catch_doxy
     @_any_to_refid
     def do_xform(self, refid):
         """\
