@@ -18,7 +18,7 @@ help:
 html xml: RIOT/doc/doxygen/xml
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-RIOT/doc/doxygen/xml:
+RIOT/doc/doxygen/xml: RIOT/doc/doxygen/Makefile
 	$(MAKE) -C RIOT/doc/doxygen xml
 
 # The file "doxy-xml" will contain the location of the xml directory

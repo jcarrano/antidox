@@ -6,18 +6,35 @@
     functionality.
 """
 
+import os
+
+from sphinx.util import logging
+
 from . import doxy
 from . import directives
+from .collector import DoxyCollector
 
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
 
-def load_db(app, env, docnames):
-    cfgdir = app.config.antidox_doxy_xml_dir
+logger = logging.getLogger(__name__)
 
-    if not hasattr(env, "antidox_db"):
+
+def load_db(app):
+    cfgdir = app.config.antidox_doxy_xml_dir
+    cfgdir_time = os.path.getmtime(cfgdir)
+
+    logger.debug("Doxy XML last modified: %s", cfgdir_time)
+
+    env = app.env
+
+    if (not hasattr(env, "antidox_db")
+        or (not hasattr(env, "antidox_db_date")
+            or env.antidox_db_date < cfgdir_time)):
+        logger.info("(Re-)Reading Doxygen DB")
         env.antidox_db = doxy.DoxyDB(cfgdir)
+        env.antidox_db_date = cfgdir_time
 
 
 def setup(app):
@@ -26,7 +43,8 @@ def setup(app):
     app.add_event("antidox-include-children")
 
     # TODO: provide support for multiple Doxygen projects
-    app.connect("env-before-read-docs", load_db)
+    app.connect("builder-inited", load_db)
+    app.add_env_collector(DoxyCollector)
 
     # app.add_directive('doxy', directives.CAuto)
     # roles.register_canonical_role('doxyt', directives.target_role)

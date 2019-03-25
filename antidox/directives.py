@@ -24,6 +24,7 @@ from . import doxy
 from .xtransform import get_stylesheet
 from .nodes import (nodeclass_from_tag, PlaceHolder, DeferredPlaceholder,
                     FakeRoot)
+from .collector import DoxyCollector
 
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
@@ -405,6 +406,8 @@ class DoxyExtractor(Directive):
         if style_fn:
             self.env.note_dependency(style_fn)
 
+        DoxyCollector.note_dependency(self.env)
+
         return nodes, special
 
     def run(self):
@@ -460,7 +463,8 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     which causes target-strings to drop the path.
     """
 
-    db = inliner.document.settings.env.antidox_db
+    env = inliner.document.settings.env
+    db = env.antidox_db
 
     is_explicit, title, _target = split_explicit_title(text.strip())
 
@@ -472,7 +476,7 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     target = _target[1:] if remove_path else _target
 
     try:
-        ref, match = resolve_refstr(inliner.document.settings.env, target)
+        ref, match = resolve_refstr(env, target)
     except doxy.RefError as e:
         msg = inliner.reporter.error(e.args[0], line=lineno)
         prb = inliner.problematic(rawtext, rawtext, msg)
@@ -491,8 +495,9 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
         innernode = literal
 
     node = addnodes.pending_xref(rawsource=rawtext, reftarget=str(ref),
-                                 refdomain=refdomain, reftype=reftype, refexplicit=is_explicit,
-                                 refdoc=inliner.document.settings.env.docname,
+                                 refdomain=refdomain, reftype=reftype,
+                                 refexplicit=is_explicit,
+                                 refdoc=env.docname,
                                  refwarn=True)
     if not is_explicit:
         # FIXME: make this fomatting customizable
@@ -512,6 +517,8 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
         node += innernode(linktext, linktext)
     else:
         node += Text(title, title)
+
+    DoxyCollector.note_dependency(env)
 
     return [node], []
 
