@@ -14,7 +14,8 @@ help:
 
 xml: Doxyfile.append tinycbor/Doxyfile tinycbor/VERSION
 	cat tinycbor/Doxyfile Doxyfile.append \
-		| (cd tinycbor/src && VERSION=$(VERSION) doxygen -)
+		| (cd tinycbor/src && VERSION=$(VERSION) doxygen -) \
+	&& touch $@
 
 # The file "doxy-xml" will contain the location of the xml directory
 doxy-xml: xml
