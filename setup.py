@@ -26,7 +26,7 @@ setup(name='antidox',
       packages=['antidox'],
       install_requires=[
         'sphinx',
-        'lxml2'
+        'lxml'
       ],
       entry_points={
         'console_scripts': [
