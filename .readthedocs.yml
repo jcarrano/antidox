@@ -4,7 +4,3 @@ version: 2
 submodules:
   exclude:
     - examples/riot/RIOT
-
-python:
-  install:
-    - requirements: .rtd-requirements.txt
