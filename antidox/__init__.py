@@ -23,15 +23,18 @@ logger = logging.getLogger(__name__)
 
 def load_db(app):
     cfgdir = app.config.antidox_doxy_xml_dir
-    cfgdir_time = os.path.getmtime(cfgdir)
+
+    cfgdir_time = os.path.getmtime(cfgdir) if os.path.exists(cfgdir) else None
 
     logger.debug("Doxy XML last modified: %s", cfgdir_time)
 
     env = app.env
 
     if (not hasattr(env, "antidox_db")
-        or (not hasattr(env, "antidox_db_date")
-            or env.antidox_db_date < cfgdir_time)):
+        or cfgdir_time is None
+        or not hasattr(env, "antidox_db_date")
+        or env.antidox_db_date < cfgdir_time):
+
         logger.info("(Re-)Reading Doxygen DB")
         env.antidox_db = doxy.DoxyDB(cfgdir)
         env.antidox_db_date = cfgdir_time
