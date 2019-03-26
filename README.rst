@@ -31,6 +31,9 @@ Document generation (i.e. conversion between doxy-xml and reStructuredText) is
 driven by XML stylesheets (powered by lxml_,) while indexing and selection of
 documentable entities is done by a SQL database (sqlite3_.)
 
+Here is an `example project <cbor_example_>`_ showing showing this extension in
+action.
+
 Objectives
 ==========
 
@@ -52,3 +55,4 @@ Objectives
 .. _Breathe: https://breathe.readthedocs.io/en/latest/
 .. _lxml: https://lxml.de/
 .. _sqlite3: https://docs.python.org/3/library/sqlite3.html
+.. _cbor_example: https://antidox-example.readthedocs.io/en/latest/

@@ -26,3 +26,4 @@ are read only to determine hierarchy relationships.
     :members:
 
 .. autodata:: SearchResult
+    :annotation: namedtuple("SearchResult", "refid name kind")

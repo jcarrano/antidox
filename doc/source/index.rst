@@ -18,11 +18,8 @@ Welcome to antidox's documentation!
 
 .. todo::
 
-  Complete this docs.
+  Add building guide including RTD instructions.
 
-.. todo::
-
-  Add glossary.
 
 Indices and tables
 ==================

@@ -78,6 +78,8 @@ todo_include_todos = True
 
 # Stolen from Sphinx' docs
 
+import enum
+
 from sphinx import addnodes  # noqa
 import re
 
@@ -97,6 +99,12 @@ def parse_event(env, sig, signode):
     signode += plist
     return name
 
+
+def include_enum_values(app, what, name, obj, skip, options):
+    if isinstance(obj, enum.Enum):
+        return False
+
+
 def setup(app):
     from sphinx.util.docfields import GroupedField
 
@@ -107,3 +115,5 @@ def setup(app):
                          names=['param'], can_collapse=True)
     app.add_object_type('event', 'event', 'pair: %s; event', parse_event,
                         doc_field_types=[fdesc])
+
+    app.connect('autodoc-skip-member', include_enum_values)

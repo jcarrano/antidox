@@ -193,4 +193,4 @@ Events
   and underscore:
 
   .. literalinclude:: ../../examples/riot/conf.py
-   :lines: 166-182,195-196
+   :lines: 166-182,195-197
