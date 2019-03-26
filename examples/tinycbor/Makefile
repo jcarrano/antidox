@@ -6,7 +6,7 @@ BUILDDIR      = _build
 
 .PHONY: sphinx-clean doxy-clean clean help view html
 
-VERSION=$(file <tinycbor/VERSION)
+VERSION=$(shell cat tinycbor/VERSION)
 
 # Put it first so that "make" without argument is like "make help".
 help:
@@ -30,9 +30,11 @@ doxy-clean:
 
 clean: doxy-clean sphinx-clean
 
+html: export VERSION := $(VERSION)
 html: xml
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
+sphinx-xml: export VERSION := $(VERSION)
 sphinx-xml: xml
 	@$(SPHINXBUILD) -M xml "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 

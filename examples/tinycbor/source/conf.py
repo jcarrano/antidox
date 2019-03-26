@@ -31,7 +31,7 @@ copyright = '2019, Intel'
 author = 'Intel'
 
 # The short X.Y version
-version = ''
+version = os.environ.get('VERSION', '')
 # The full version, including alpha/beta/rc tags
 release = 'unknown'
 
