@@ -1,6 +1,10 @@
-# This is to avoid cloning the RIOT repo.
 version: 2
 
+# avoid cloning the RIOT repo, too heavy
 submodules:
   exclude:
     - examples/riot/RIOT
+
+python:
+  install:
+    - lxml
