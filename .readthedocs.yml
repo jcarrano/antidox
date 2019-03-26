@@ -1,0 +1,6 @@
+# This is to avoid cloning the RIOT repo.
+version: 2
+
+submodules:
+  exclude:
+    - examples/riot/RIOT
