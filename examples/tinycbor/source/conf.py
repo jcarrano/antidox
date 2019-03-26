@@ -20,6 +20,10 @@
 # -- Project information -----------------------------------------------------
 
 import sys, os
+import pathlib
+
+this_dir = pathlib.Path(__file__).parent
+
 sys.path.insert(0, os.path.abspath('../../..'))
 
 project = 'tiny-cbor'
@@ -178,4 +182,32 @@ epub_exclude_files = ['search.html']
 
 # ----- Antidox options ---
 
-antidox_doxy_xml_dir = "xml"
+antidox_doxy_xml_dir = str(pathlib.Path(this_dir, "..", "xml"))
+
+
+# -- Hacks for Read the Docs ------------------------------------------
+#  This will only be used when we are inside RTD
+#  Taken from http://breathe.readthedocs.io/en/latest/readthedocs.html
+
+import subprocess
+
+read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
+
+def _run_cmd(cmd):
+    """Run an arbitrary command and check exit status"""
+    try:
+        retcode = subprocess.call(cmd, shell=True)
+        if retcode < 0:
+            sys.stderr.write("command terminated by signal %s" % (-retcode))
+    except OSError as e:
+        sys.stderr.write("command execution failed: %s" % e)
+
+def generate_doxygen(app, config):
+    """Run the doxygen make commands if we're on the ReadTheDocs server"""
+    if read_the_docs_build:
+        _run_cmd("make -C {} xml".format(pathlib.Path(this_dir, "..")))
+
+
+def setup(app):
+    """Add hook for building doxygen xml when needed"""
+    app.connect("config-inited", generate_doxygen)
