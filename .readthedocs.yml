@@ -7,4 +7,4 @@ submodules:
 
 python:
   install:
-    - lxml
+    - requirements: .rtd-requirements.txt
