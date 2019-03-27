@@ -35,7 +35,7 @@
             <xsl:attribute name="objtype"><xsl:value-of select="$role"/></xsl:attribute>
             <desc_signature first="False">
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
-                <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>
+                <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:apply-templates select="type|name"/>
                 <xsl:if test="argsstring/text()|param">
                 <desc_parameterlist>
@@ -62,7 +62,7 @@
             <xsl:attribute name="objtype">type</xsl:attribute>
             <desc_signature first="False">
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
-                <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>
+                <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
                 <desc_type><xsl:text>enum</xsl:text></desc_type>
                 <xsl:apply-templates select="name"/>
                 <antidox:index/>
@@ -72,7 +72,9 @@
                 <xsl:for-each select="enumvalue">
                     <definition_list_item objtype="value">
                         <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
-                        <xsl:attribute name="names"><xsl:value-of select="name"/></xsl:attribute>
+                        <!-- This causes repeated ids
+                        <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
+                        -->
                         <term><xsl:value-of select="name"/><xsl:apply-templates select="initializer"/></term>
                         <definition><xsl:apply-templates select="briefdescription|detaileddescription"/></definition>
                         <antidox:index/>
@@ -253,8 +255,9 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         <xsl:apply-templates />
     </xsl:template>
 
-    <!-- if the briefdescription is a title, then dissolve paragraphs -->
-    <xsl:template match="compounddef/briefdescription/para">
+    <!-- if the briefdescription is a title, then dissolve paragraphs, but only
+         for entities that we render with titles (files and group) -->
+    <xsl:template match="compounddef[@kind = 'group' or @kind = 'file']/briefdescription/para">
         <xsl:apply-templates />
     </xsl:template>
 
