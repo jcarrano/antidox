@@ -9,3 +9,4 @@ dist/
 doxy-xml
 examples/tinycbor/xml
 .mypy_cache
+generated

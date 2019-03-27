@@ -13,6 +13,8 @@ This is the unofficial documentation for `riot`_.
    struct_example
    union_example
    file_example
+   file_example2
+   generated/file-index
 
 Indices and tables
 ==================
