@@ -65,15 +65,15 @@ class Kind(enum.Enum):
         member/compound definition is relevant because compounds have their
         own files.
         """
-        return tuple(cls[k] for k in ("CLASS", "STRUCT", "UNION", "EXCEPTION",
-                                      "FILE", "NAMESPACE", "GROUP", "PAGE", "DIR"))
+        return (cls.CLASS, cls.STRUCT, cls.UNION, cls.EXCEPTION,
+                cls.FILE, cls.NAMESPACE, cls.GROUP, cls.PAGE, cls.DIR)
 
     @classmethod
     def synthetic_compounds(cls):
         """Return a tuple containing all kinds that are compounds and are defined
         by the user and not by the language syntax"""
 
-        return tuple(cls[k] for k in ("GROUP", "PAGE", "DIR"))
+        return (cls.GROUP, cls.PAGE, cls.DIR)
 
     # FIXME: add  instance methods (like "is_subordinate")
 
@@ -82,7 +82,7 @@ class Kind(enum.Enum):
         """Return a tuple containing those kinds that are not proper members
         (i.e. they are not defined by memberdef) but rather are "children" of
         a member."""
-        return tuple(cls[k] for k in ("ENUMVALUE",))
+        return (cls.ENUMVALUE,)
 
     @classmethod
     def tag_supported(cls, attr):
@@ -552,7 +552,7 @@ class DoxyDB:
         compounds: list of SearchResult
             Descendents that are compounds, and as such may contain children.
         """
-
+        # TODO: add parameter to filter by kind
         cur = self._db_conn.execute(
         """SELECT hierarchy.prefix, hierarchy.id, name, kind,
                   kind IN compound_kinds as is_compound
@@ -570,6 +570,50 @@ class DoxyDB:
                              for prefix, _id, name, kind, _ in g]
 
         return r
+
+    def find(self, kinds = None, no_parent = False):
+        """Find all elements of the specified kinds.
+
+        Parameters
+        ----------
+
+        kinds: list of Kind to filter by. If not give, all kinds are retrieved
+            (except those listed in Kind.subordinate())
+        no_parent: if True, return only elements without a parent.
+
+        Returns
+        -------
+
+        result: iterable yielding SearchResult
+        """
+
+        if kinds is not None:
+            _kinds = kinds
+        else:
+            _kinds = list(set(Kind.__members__.values())
+                          - set(Kind.subordinate()))
+
+        query = (
+        """WITH
+            allowed_kinds (kind) AS (
+                VALUES {}
+            )
+            SELECT elements.* FROM elements
+            INNER JOIN allowed_kinds as ak
+                ON ak.kind == elements.kind
+        """).format(",".join(itertools.repeat("(?)", len(_kinds))))
+
+        if no_parent:
+            query += """
+            LEFT JOIN hierarchy as h
+                ON h.prefix == elements.prefix AND h.id == elements.id
+            WHERE h.p_prefix IS NULL AND h.p_id IS NULL
+            """
+
+        cur = self._db_conn.execute(query, _kinds)
+
+        return (SearchResult(RefId(*ref), name, kind)
+                for *ref, name, kind in cur)
 
     @_refid_str
     def refid_to_target(self, refid):
@@ -697,7 +741,7 @@ class DoxyDB:
         If the string is ambiguous (i.e., more than one entity matches, an error
         is raised).
         The scope parameter allows for disambiguation by preferring results that
-        are children of a given refid. Even then, if more there is more than one
+        are children of a given refid. Even then, if there is more than one
         result that matches both conditions, it is still an error.
         Because of the way Doxygen works with C, if there is a namespace it
         must be specified. This only happens with structs/unions defined inside

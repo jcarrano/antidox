@@ -258,6 +258,23 @@ class Shell(cmd.Cmd):
         print("{}\t{}\t{}".format(refid, kind, name))
 
     @_catch_doxy
+    def do_get_all(self, params):
+        """\
+        get-all [noparent] <kind>*
+
+        Retrieve all entities of the specified kinds (or all kinds if none is
+        given. The "noparent" parameter will filter only those entities with no
+        parent.
+        """
+
+        args = params.split()
+        noparent = bool(args and args[0] == 'noparent')
+        kinds_s = args[1:] if noparent else args
+        kinds = [doxy.Kind.from_attr(s) for s in kinds_s] or None
+
+        self._print_results(self.db.find(kinds, no_parent=noparent))
+
+    @_catch_doxy
     @_any_to_refid
     def do_parents(self, refid):
         """\
