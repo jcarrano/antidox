@@ -8,3 +8,4 @@ dist/
 *.egg-info/
 doxy-xml
 examples/tinycbor/xml
+.mypy_cache
