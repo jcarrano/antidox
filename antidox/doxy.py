@@ -217,6 +217,18 @@ _target_re = re.compile(r"(?:((?:[^/]+/)*[^/]+\.[^/:.]+)::)?(.+)")
 _Target = namedtuple("_Target", "path name")
 
 
+# On a test run, the following optimization alone cut execution time of
+# sphinx-build from 3'30'' to 2'55'. This makes the total time be dominated
+# by the writing step, which does not depend on this extension.
+@functools.lru_cache(maxsize=32)
+def _parse_xml(filename):
+    """Parse a xml file into an ElementTree. This function is cached for
+    performance since during normal use the same file is frequently accessed
+    many times in a row."""
+    with open(filename) as f:
+        return ET.parse(f)
+
+
 class Target(_Target):
     """Tuple uniquely identifying an entity.
 
@@ -847,8 +859,7 @@ class DoxyDB:
 
         # TODO: should we cache this?
         fn = os.path.join(self._xml_dir, "{}.xml".format(definition_file_base))
-        with open(fn) as f:
-            compound_doc = ET.parse(f)
+        compound_doc = _parse_xml(fn)
 
         return compound_doc.xpath(xpathq, id=str(refid))[0]
 
