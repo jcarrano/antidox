@@ -42,7 +42,7 @@ class InvalidEntity(sphinx.errors.SphinxError):
     pass
 
 
-ENTITY_RE = re.compile(r"(?:!(?P<refid>\w+))|(?:(?P<kind>\w+)?\[(?P<name>\w+)\])|(?P<target>[^[]\S*)")
+ENTITY_RE = re.compile(r"(?:!(?P<refid>[\w-]+))|(?:(?P<kind>\w+)?\[(?P<name>\w+)\])|(?P<target>[^[]\S*)")
 """Regular expression for references to entities.
 
 Catches either target strings (a/b.h::c), kind[name] strings or refid strings
