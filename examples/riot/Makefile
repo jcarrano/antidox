@@ -15,10 +15,10 @@ help:
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-html xml: RIOT/doc/doxygen/xml generated/files-index.rst
+html xml pickle: RIOT/doc/doxygen/xml generated/file-index.rst
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-generated/files-index.rst: RIOT/doc/doxygen/xml
+generated/file-index.rst: RIOT/doc/doxygen/xml
 	python gen_stubs.py --files $< $(dir $@)
 
 RIOT/doc/doxygen/xml: RIOT/doc/doxygen/Makefile
