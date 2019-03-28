@@ -55,6 +55,27 @@ the same stylesheet is applied to a whole doxygen XML. In addition, an
 :ref:`antidox-fakeroot` may be necessary if many top-level elements are to
 be generated from a single XML node.
 
+Global stylesheet parameters
+----------------------------
+
+The XSL following parameters are available at the global scope. Their value
+is derived from the rst:dir:`doxy:c` directive options.
+
+Boolean parameters
+~~~~~~~~~~~~~~~~~~
+
+These are set to ``true`` if the corresponding options is set, else they are
+``false``: :ref:`noindex <noindex-option>`, :ref:`hideloc <hideloc-option>`,
+:ref:`hidedoc <hidedoc-option>`, :ref:`hidedef <hidedef-option>`.
+
+The typical use of ``noindex`` is to conditionally emit an
+:ref:`index node <_antidox-indexnode>`:
+
+.. code-block: xslt
+
+  <xsl:if test="noindex!='true'"><antidox:index/></xsl:if>
+
+
 antidox-specific attributes
 ---------------------------
 
@@ -93,7 +114,6 @@ If this element is not present, antidox will try to nest the directive body
 under a ``docutils.nodes.desc_content`` node. If none is found, it will be
 placed as a child of the last top level element.
 
-
 ``<antidox:children>``
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -101,6 +121,14 @@ Placeholder for child elements. This node will be replaced by the subtrees of
 children that result from the :ref:`children option <children-option>` and
 :ref:`no-children option <no-children-option>`. By default children subtrees are
 appended to the last root element resulting from the transform.
+
+.. _antidox-indexnode:
+
+``<antidox:index>``
+~~~~~~~~~~~~~~~~~~~
+
+Places cross-reference entries (``sphinx.addnodes.index``). Additionally, if
+its parent has an ``ids`` attribute, it registers it in the proper domain.
 
 .. _antidox-fakeroot:
 

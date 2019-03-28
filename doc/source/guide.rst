@@ -79,15 +79,23 @@ Directives and roles are contained in an `doxy` domain.
 
   The following options are accepted:
 
+  .. _hidedef-option:
+
   ``hidedef``
     For macros and variables, do not show the definition.
 
+  .. _hideloc-option:
+
   ``hideloc``
-    Do not print the location in the source code of the definition (not
-    currently implemented.)
+    Do not print the location in the source code of the definition.
+
+  .. _noindex-option:
 
   ``noindex``
-    Do not add index entries (not currently implemented.)
+    Do not add index entries. This options is inherited by children included
+    automatically by the :ref:`:children: <children-option>` option.
+
+  .. _hidedoc-option:
 
   ``hidedoc``
     Do not render the text of the documentation. This is useful if you want

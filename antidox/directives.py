@@ -397,7 +397,10 @@ class DoxyExtractor(Directive):
         element_tree = self.db.get_tree(ref)
 
         my_domain = self.env.domains['doxy']
-        rst_etree = my_domain.stylesheet(element_tree)
+
+        noindex = 'true' if self.options.get('noindex', False) else 'false'
+
+        rst_etree = my_domain.stylesheet(element_tree, noindex=noindex)
         nodes, special = self._etree_to_sphinx(
             rst_etree,
             **{k: k in self.options for k in self._node_hidings_opts})
