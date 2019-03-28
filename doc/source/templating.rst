@@ -14,11 +14,8 @@ elements the transformation is straightforward as there is a direct
 correspondence. Special cases like directives, localization and indices are
 handled via the ``antidox`` XML namespace.
 
-The XSL processing step (converting to Doxygen XML into intermediate XML) is
-done in such a way that it should be possible to do it offline, using a generic
-XML processor. That means there a no special functions and no special template
-parameters. During normal operation, the intermediate XML is never written to
-a document, but it is kept in memory as an element tree.
+During normal operation, the intermediate XML is never written to a document,
+but it is kept in memory as an element tree.
 
 Standard Sphinx and reST nodes
 ------------------------------
