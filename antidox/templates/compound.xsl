@@ -8,6 +8,8 @@
 
     <xsl:param name="noindex"/>
     <xsl:param name="hideloc"/>
+    <xsl:param name="hidedef"/>
+    <xsl:param name="hidedoc"/>
 
     <xsl:template match="/memberdef[@kind='function']">
         <xsl:call-template name="memberdef-internal">
@@ -51,7 +53,7 @@
                   </xsl:for-each>
                 </desc_parameterlist>
                 </xsl:if>
-                <xsl:if test="noindex!='true'"><antidox:index/></xsl:if>
+                <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
             </desc_signature>
             <desc_content>
                 <xsl:apply-templates select="briefdescription"/>
@@ -70,7 +72,7 @@
                 <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
                 <desc_type><xsl:text>enum</xsl:text></desc_type>
                 <xsl:apply-templates select="name"/>
-                <xsl:if test="noindex!='true'"><antidox:index/></xsl:if>
+                <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
             </desc_signature>
             <desc_content>
             <definition_list>
@@ -82,7 +84,7 @@
                         -->
                         <term><xsl:value-of select="name"/><xsl:apply-templates select="initializer"/></term>
                         <definition><xsl:apply-templates select="briefdescription|detaileddescription"/></definition>
-                        <xsl:if test="noindex!='true'"><antidox:index/></xsl:if>
+                        <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
                     </definition_list_item>
                 </xsl:for-each>
             </definition_list>
@@ -132,7 +134,7 @@
                 <xsl:attribute name="names"><xsl:value-of select="compoundname"/></xsl:attribute>
                 <desc_type><xsl:value-of select="@kind"/></desc_type>
                 <desc_name><xsl:text> </xsl:text><xsl:value-of select="compoundname" /></desc_name>
-                <xsl:if test="noindex!='true'"><antidox:index/></xsl:if>
+                <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
             </desc_signature>
             <desc_content>
                 <xsl:apply-templates select="briefdescription"/>

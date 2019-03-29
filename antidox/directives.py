@@ -196,13 +196,16 @@ class DoxyExtractor(Directive):
     optional_arguments = 0
 
     option_spec = {
-        'noindex': directives.flag,  # TODO: support noindex
+        'noindex': directives.flag,
         'hidedef': directives.flag,
-        'hideloc': directives.flag,  # TODO: support hideloc
+        'hideloc': directives.flag,
         'hidedoc': directives.flag,
         'children': string_list,
         'no-children': string_list,
     }
+
+    _flag_parameters = [opt for opt, typ in option_spec.items()
+                        if typ == directives.flag]
 
     _node_hidings_opts = {'hidedef', 'hidedoc'}
 
@@ -380,6 +383,10 @@ class DoxyExtractor(Directive):
 
         return nodes
 
+    def _options_to_params(self):
+        return {k: 'true()' if self.options.get(k) else 'false()'
+                for k in self._flag_parameters}
+
     def run_reference(self, ref):
         """Convert the doxygen XML of a reference into Sphinx nodes.
 
@@ -392,15 +399,13 @@ class DoxyExtractor(Directive):
         nodes: List of sphinx nodes.
         special: a dictionary of special nodes (subclasses of DeferredPlaceholder)
         """
-        # TODO: support noindex
 
         element_tree = self.db.get_tree(ref)
 
         my_domain = self.env.domains['doxy']
 
-        noindex = 'true' if self.options.get('noindex', False) else 'false'
-
-        rst_etree = my_domain.stylesheet(element_tree, noindex=noindex)
+        rst_etree = my_domain.stylesheet(element_tree,
+                                         **self._options_to_params())
         nodes, special = self._etree_to_sphinx(
             rst_etree,
             **{k: k in self.options for k in self._node_hidings_opts})
