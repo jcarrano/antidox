@@ -35,7 +35,7 @@ logger = logging.getLogger(__name__)
 
 # Generic attributes that are handled by _etree_to_sphinx and should be removed
 # before creating a node.
-_GLOBAL_ATTRIBUTES = {"{antidox}l", "{antidox}definition", "{antidox}content"}
+_GLOBAL_ATTRIBUTES = {"{antidox}l", "{antidox}definition"}
 
 
 class InvalidEntity(sphinx.errors.SphinxError):
@@ -207,7 +207,7 @@ class DoxyExtractor(Directive):
     _flag_parameters = [opt for opt, typ in option_spec.items()
                         if typ == directives.flag]
 
-    _node_hidings_opts = {'hidedef', 'hidedoc'}
+    _node_hidings_opts = {'hidedef'}
 
     def add_target_and_index(self, name, sig, signode):
         # type: (Any, unicode, addnodes.desc_signature) -> None
@@ -236,8 +236,8 @@ class DoxyExtractor(Directive):
 
     @staticmethod
     def _iterwalk_with_hiding(etree, hidedoc=False, hidedef=False):
-        """Iterator around ET.iterwalk that transparently skips {antidox}content
-        and {antidox}definition based on hidedoc and hidedef.
+        """Iterator around ET.iterwalk that transparently skips
+        {antidox}definition based and hidedef.
 
         Returns
         -------
@@ -252,10 +252,7 @@ class DoxyExtractor(Directive):
         for action, elem in et_iter:
             if action == "start":
                 iscontent_default = "true" if elem.tag == 'desc_content' else "false"
-                if hidedoc and elem.attrib.get("{antidox}content", iscontent_default) == 'true':
-                    et_iter.skip_subtree()
-                    skipped = True
-                elif hidedef and elem.attrib.get("{antidox}definition") == 'true':
+                if hidedef and elem.attrib.get("{antidox}definition") == 'true':
                     et_iter.skip_subtree()
                     skipped = True
                 else:

@@ -94,16 +94,6 @@ Sphinx's locale function.
 When set to ``"true"`` in any element it indicates that it is a definition and
 should be skipped when the `:hidedef:` option is given.
 
-``antidox:content``
-~~~~~~~~~~~~~~~~~~~
-
-When set to ``"true"`` in any element it indicates that it contains the
-documentation for the entity and thus must be skipped when the `:hidedoc:`
-option is given.
-
-`desc_content` will have this attribute automatically set to "true", though it
-is still possible to override it.
-
 antidox-specific (pseudo)elements
 ---------------------------------
 

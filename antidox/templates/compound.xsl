@@ -56,11 +56,13 @@
                 </xsl:if>
                 <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
             </desc_signature>
-            <desc_content>
-                <xsl:apply-templates select="briefdescription"/>
-                <xsl:apply-templates select="initializer"/>
-                <xsl:apply-templates select="detaileddescription"/>
-            </desc_content>
+            <xsl:if test="not($hidedoc)">
+                <desc_content>
+                    <xsl:apply-templates select="briefdescription"/>
+                    <xsl:apply-templates select="initializer"/>
+                    <xsl:apply-templates select="detaileddescription"/>
+                </desc_content>
+            </xsl:if>
         </desc>
     </xsl:template>
 
@@ -76,6 +78,7 @@
                 <xsl:apply-templates select="name"/>
                 <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
             </desc_signature>
+            <xsl:if test="not($hidedoc)">
             <desc_content>
             <definition_list>
                 <xsl:for-each select="enumvalue">
@@ -91,6 +94,7 @@
                 </xsl:for-each>
             </definition_list>
             </desc_content>
+            </xsl:if>
         </desc>
     </xsl:template>
 
@@ -123,9 +127,11 @@
         <xsl:attribute name="names"><xsl:value-of select="@id"/>|<xsl:value-of select="compoundname"/>[<xsl:value-of select="@kind"/>]</xsl:attribute>
         <title><xsl:apply-templates select="briefdescription"/></title>
         <!-- Catch all that is outside a heading -->
+        <xsl:if test="not($hidedoc)">
         <xsl:apply-templates select="detaileddescription/para[not(text()[normalize-space()])]/child::*[not(preceding::heading or self::heading)]|
                                      detaileddescription/para[text()[normalize-space()] and not(preceding::heading or self::heading)]"/>
         <xsl:apply-templates select="detaileddescription/para/heading[@level=1]"/>
+        </xsl:if>
         </section>
     </xsl:template>
 
@@ -139,11 +145,13 @@
                 <desc_name><xsl:text> </xsl:text><xsl:value-of select="compoundname" /></desc_name>
                 <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
             </desc_signature>
-            <desc_content>
-                <xsl:apply-templates select="briefdescription"/>
-                <xsl:apply-templates select="detaileddescription"/>
-                <antidox:children/>
-            </desc_content>
+            <xsl:if test="not($hidedoc)">
+                <desc_content>
+                    <xsl:apply-templates select="briefdescription"/>
+                    <xsl:apply-templates select="detaileddescription"/>
+                    <antidox:children/>
+                </desc_content>
+            </xsl:if>
         </desc>
     </xsl:template>
 
@@ -164,7 +172,9 @@
     <xsl:template match="detaileddescription/para/heading">
         <xsl:variable name="heading" select="generate-id(.)"/>
         <xsl:variable name="level" select="number(@level)"/>
-        <section antidox:content="true"> <!-- TODO: add section ID (how do we handle duplicates?) -->
+        <!-- TODO: add section ID (how do we handle duplicates?) -->
+        <xsl:if test="not($hidedoc)">
+        <section>
             <xsl:attribute name="ids">c.<xsl:value-of select="ancestor::*/@id"/>-<xsl:call-template name="string-to-ids"/></xsl:attribute>
             <!-- Small workaround for trailing whitespace in titles -->
             <title><xsl:value-of select="normalize-space(.)"/></title>
@@ -173,6 +183,7 @@ select="parent::*/following-sibling::para[(ref or text()[normalize-space()]) and
 parent::*/following-sibling::para[not(ref or text()[normalize-space()])]/*[not(self::heading) and generate-id(preceding::heading[1])=$heading]|
 parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id(preceding::heading[$level=number(@level)][1])=$heading]"/>
         </section>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match="type">
