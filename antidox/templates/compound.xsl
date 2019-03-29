@@ -6,10 +6,10 @@
 
     <!-- Global parameters. These are received from the directive options. -->
 
-    <xsl:param name="noindex"/>
-    <xsl:param name="hideloc"/>
-    <xsl:param name="hidedef"/>
-    <xsl:param name="hidedoc"/>
+    <xsl:param name="noindex" select="false()"/>
+    <xsl:param name="hideloc" select="false()"/>
+    <xsl:param name="hidedef" select="false()"/>
+    <xsl:param name="hidedoc" select="false()"/>
 
     <xsl:template match="/memberdef[@kind='function']">
         <xsl:call-template name="memberdef-internal">
@@ -37,17 +37,18 @@
 
     <xsl:template name="memberdef-internal">
         <xsl:param name = "role" />
-        <desc domain="c" noindex="False">
+        <desc domain="c">
+            <xsl:attribute name="noindex"><xsl:value-of select="$noindex"/></xsl:attribute>
             <xsl:attribute name="desctype"><xsl:value-of select="$role"/></xsl:attribute>
             <xsl:attribute name="objtype"><xsl:value-of select="$role"/></xsl:attribute>
-            <desc_signature first="False">
+            <desc_signature first="false">
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:apply-templates select="type|name"/>
                 <xsl:if test="argsstring/text()|param">
                 <desc_parameterlist>
                   <xsl:for-each select="param">
-                    <desc_parameter noemph="True">
+                    <desc_parameter noemph="true">
                         <xsl:apply-templates/>
                     </desc_parameter>
                   </xsl:for-each>
@@ -64,7 +65,8 @@
     </xsl:template>
 
     <xsl:template match="/memberdef[@kind='enum']">
-        <desc domain="c" noindex="False">
+        <desc domain="c">
+            <xsl:attribute name="noindex"><xsl:value-of select="$noindex"/></xsl:attribute>
             <xsl:attribute name="desctype">type</xsl:attribute>
             <xsl:attribute name="objtype">type</xsl:attribute>
             <desc_signature first="False">
@@ -128,8 +130,9 @@
     </xsl:template>
 
     <xsl:template match="/compounddef[@kind = 'struct' or @kind = 'union']">
-        <desc domain="c" noindex="False" desctype="type" objtype="type">
-            <desc_signature first="False">
+        <desc domain="c" desctype="type" objtype="type">
+            <xsl:attribute name="noindex"><xsl:value-of select="$noindex"/></xsl:attribute>
+            <desc_signature first="false">
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:attribute name="names"><xsl:value-of select="compoundname"/></xsl:attribute>
                 <desc_type><xsl:value-of select="@kind"/></desc_type>

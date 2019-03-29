@@ -289,6 +289,8 @@ class DoxyExtractor(Directive):
 
         special = {}
 
+        str2bool = {"false": False, "true": True}
+
         if etree.getroot() is None:
             logger.warn("Template produced no elements for %s",
                         self.arguments[0])
@@ -307,7 +309,8 @@ class DoxyExtractor(Directive):
                 # automatically handle list attributes
                 list_attributes = getattr(nclass, "list_attributes", ())
                 filtered_attrs = {k: (v.split("|")
-                                      if k in list_attributes else v)
+                                      if k in list_attributes
+                                      else str2bool.get(v, v))
                                   for (k, v) in elem.attrib.items()
                                   if k not in _GLOBAL_ATTRIBUTES}
 

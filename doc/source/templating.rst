@@ -33,6 +33,9 @@ Some nodes accept a list of values as arguments. XML element attributes, however
 are always string. To work around this issue, antidox allows encoding lists for
 these attributes by using "|" as a separator.
 
+Additionally, the strings ``true`` and ``false`` are converted to Python's
+**bool()**.
+
 .. _xml-additional:
 
 Additional information
