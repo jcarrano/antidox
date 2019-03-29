@@ -55,9 +55,9 @@ def _any_to_refid(f):
     @functools.wraps(f)
     def _f(self, line):
         try:
-            type, refid_or_target = line.split()
+            type, refid_or_target, *extra = line.split()
         except ValueError:
-            print("Error: expected two arguments.")
+            print("Error: expected at least two arguments.")
             return
 
         if type not in ("r", "t"):
@@ -68,7 +68,7 @@ def _any_to_refid(f):
         refid = (refid_or_target if type == 'r'
                  else self.db.resolve_target(refid_or_target))
 
-        return f(self, refid)
+        return f(self, refid, *extra)
 
     return _f
 
@@ -334,19 +334,23 @@ class Shell(cmd.Cmd):
 
     @_catch_doxy
     @_any_to_refid
-    def do_xform(self, refid):
+    def do_xform(self, refid, *flags):
         """\
-        xform r refid
-        xform t target
+        xform r refid <flags>*
+        xform t target <flags>*
 
         Fetch an element and apply the stylesheet to it.
 
         Note: this command does some whitespace modifications so that the resulting
         XML can be pretty-printed.
+
+        Flags can be any of noindex, hideloc, hidedef, hidedoc.
         """
         root = self.db.get_tree(refid)
 
-        transformed = self.stylesheet(root)
+        flags = {k: "true()" for k in flags}
+
+        transformed = self.stylesheet(root, **flags)
         for element in transformed.iter():
             if element.tail is not None and not element.tail.strip():
                 element.tail = None
