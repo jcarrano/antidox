@@ -322,7 +322,7 @@ class Shell(cmd.Cmd):
 
         print(ET.tostring(root, pretty_print=True, encoding='unicode'))
 
-    @_catch_doxy
+    @_catch(doxy.RefError, doxy.DoxyFormatError, ET.XMLSyntaxError)
     def do_sty(self, filename):
         """\
         sty [template.xsl]
