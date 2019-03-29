@@ -387,7 +387,7 @@ class DoxyExtractor(Directive):
         return nodes
 
     def _options_to_params(self):
-        return {k: 'true()' if self.options.get(k) else 'false()'
+        return {k: 'true()' if k in self.options else 'false()'
                 for k in self._flag_parameters}
 
     def run_reference(self, ref):
