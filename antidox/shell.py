@@ -25,7 +25,7 @@ import pathlib
 from lxml import etree as ET
 
 from . import doxy
-from .xtransform import get_stylesheet
+from .xtransform import get_stylesheet, create_namespace
 
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
@@ -91,6 +91,7 @@ class Shell(cmd.Cmd):
 
         super().__init__(**kwargs)
 
+        create_namespace()
         self.do_sty("")
 
     def precmd(self, line):

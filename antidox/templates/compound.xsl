@@ -339,6 +339,7 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
 
     <!-- Convert a string into something that is safe to use as a docutils ids
          field. -->
+    <!-- TODO: implement this in Python -->
     <xsl:template name="string-to-ids"><xsl:value-of select="
           translate(
             translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ', 'abcdefghijklmnopqrstuvwxyz-'),

@@ -7,6 +7,7 @@
 """
 
 import os
+import collections
 from pkgutil import get_data
 
 from lxml import etree as ET
@@ -29,8 +30,21 @@ class Resolver(ET.Resolver):
         if url == "antidox:compound":
             return self.resolve_string(_get_compound_xsl_text(), context)
 
+_XLATE_TABLE =
 
-def get_stylesheet(stylesheet_filename=None):
+class _StaticExtensions:
+    def l(self, _, text):
+        """Stub locale function. This is here so we can run the XSL transform
+        without having to import sphinx."""
+        return text
+
+    def string_to_ids(self, _ text):
+        """Convert a string into something that is safe to use as a docutils ids
+        field."""
+
+
+def get_stylesheet(stylesheet_filename=None,
+                   doxy_db=None, locale_fn=None):
     """Get a XSLT stylesheet.
 
     If stylesheet_filename is not specified, the default sheet will be returned.
@@ -38,6 +52,13 @@ def get_stylesheet(stylesheet_filename=None):
     If a file is given, it will be loaded with a special loaded that exposes
     the default one under the "antidox:compound".
     """
+
+    if locale_fn:
+        class _ThisExt(_StaticExtensions):
+            def l(self, _, text):
+                return locale_fn(text)
+    else:
+        _ThisExt = _StaticExtensions
 
     if stylesheet_filename:
         parser = ET.XMLParser()
