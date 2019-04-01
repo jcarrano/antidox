@@ -175,7 +175,7 @@
         <!-- TODO: add section ID (how do we handle duplicates?) -->
         <xsl:if test="not($hidedoc)">
         <section>
-            <xsl:attribute name="ids">c.<xsl:value-of select="ancestor::*/@id"/>-<xsl:call-template name="string-to-ids"/></xsl:attribute>
+            <xsl:attribute name="ids"><xsl:value-of select="concat('c.',ancestor::*/@id,'-',antidox:string_to_ids(.))"/></xsl:attribute>
             <!-- Small workaround for trailing whitespace in titles -->
             <title><xsl:value-of select="normalize-space(.)"/></title>
             <xsl:apply-templates
@@ -299,7 +299,7 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
     </xsl:template>
 
     <xsl:template match='parameterlist'>
-        <rubric><xsl:text antidox:l="true">Parameters</xsl:text></rubric>
+        <rubric><xsl:value-of select="antidox:l('Parameters')"/></rubric>
         <field_list>
             <xsl:apply-templates/>
         </field_list>
@@ -336,20 +336,6 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         </antidox:directive>
         </xsl:if>
     </xsl:template>
-
-    <!-- Convert a string into something that is safe to use as a docutils ids
-         field. -->
-    <!-- TODO: implement this in Python -->
-    <xsl:template name="string-to-ids"><xsl:value-of select="
-          translate(
-            translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ', 'abcdefghijklmnopqrstuvwxyz-'),
-            translate(
-              .,
-              'abcdefghijklmnopqrstuvwxyz0123456789-_',
-              ''
-            ),
-            ''
-          )" /></xsl:template>
 
     <!-- This prevents whitespace from polluting the output
          Without this template, text nodes end up as children of elements that

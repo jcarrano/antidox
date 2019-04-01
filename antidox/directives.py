@@ -33,11 +33,6 @@ __copyright__ = "Copyright 2018, Freie Universität Berlin"
 logger = logging.getLogger(__name__)
 
 
-# Generic attributes that are handled by _etree_to_sphinx and should be removed
-# before creating a node.
-_GLOBAL_ATTRIBUTES = {"{antidox}l"}
-
-
 class InvalidEntity(sphinx.errors.SphinxError):
     pass
 
@@ -263,19 +258,14 @@ class DoxyExtractor(Directive):
             if action == "start":
                 nclass = nodeclass_from_tag(elem.tag)
 
-                text = elem.text or (_locale(elem.text)
-                                     if elem.attrib.get("{antidox}l", False)
-                                     else elem.text)
-
-                arg = text if issubclass(nclass, Text) else ''
+                arg = elem.text if issubclass(nclass, Text) else ''
 
                 # automatically handle list attributes
                 list_attributes = getattr(nclass, "list_attributes", ())
                 filtered_attrs = {k: (v.split("|")
                                       if k in list_attributes
                                       else str2bool.get(v, v))
-                                  for (k, v) in elem.attrib.items()
-                                  if k not in _GLOBAL_ATTRIBUTES}
+                                  for (k, v) in elem.attrib.items()}
 
                 node = nclass(arg, **filtered_attrs)
                 if not isinstance(node, Text) and elem.text:
@@ -330,7 +320,7 @@ class DoxyExtractor(Directive):
             nodes = [content_container]
         else:
             child_index = nodes[0].first_child_matching_class(
-                                                        addnodes.desc_content)
+                addnodes.desc_content)
             content_container = (nodes[0][child_index]
                                  if child_index is not None else nodes[-1])
 
@@ -345,7 +335,7 @@ class DoxyExtractor(Directive):
             else:
                 uc_index = nodes.index(uccontent)
                 nodes[uc_index:uc_index+1] = content_container.children
-            assert(nodes if self.content else True)
+            assert nodes if self.content else True
 
         return nodes
 
@@ -441,7 +431,7 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     is_explicit, title, _target = split_explicit_title(text.strip())
 
     title = title.strip()
-    _target=_target.strip()
+    _target = _target.strip()
 
     remove_path = _target.startswith("~")
 
@@ -522,4 +512,5 @@ class DoxyDomain(Domain):
 
         self.stylesheet_filename = env.app.config.antidox_xml_stylesheet
 
-        self.stylesheet = get_stylesheet(self.stylesheet_filename)
+        self.stylesheet = get_stylesheet(self.stylesheet_filename,
+                                         locale_fn=_locale)

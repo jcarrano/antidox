@@ -72,21 +72,27 @@ These are set to ``true`` if the corresponding options is set, else they are
 :ref:`hidedoc <hidedoc-option>`, :ref:`hidedef <hidedef-option>`.
 
 The typical use of ``noindex`` is to conditionally emit an
-:ref:`index node <_antidox-indexnode>`:
+:ref:`index node <antidox-indexnode>`:
 
 .. code-block: xslt
 
   <xsl:if test="noindex!='true'"><antidox:index/></xsl:if>
 
 
-antidox-specific attributes
----------------------------
+XPath extension functions
+-------------------------
 
-``antidox:l`` (attribute)
-~~~~~~~~~~~~~~~~~~~~~~~~~
+.. xpath-func:: antidox:l(node_or_text)
 
-When set to ``"true"`` in a Text-derived element, the text is run through
-Sphinx's locale function.
+   Run the specified text through Sphinx's *locale* function. If a node is
+   given, it is transformed into text via ``string(.)``.
+
+
+.. xpath-func:: antidox:string_to_ids(node_or_text)
+
+   Convert a string into something that is safe to use as a docutils ids
+   field. If a node is given, it is run through ``string(.)``. This is useful
+   for automatically generating anchors from section titles.
 
 antidox-specific (pseudo)elements
 ---------------------------------
