@@ -9,6 +9,7 @@
 import os
 import collections
 import re
+import functools
 from pkgutil import get_data
 
 from lxml import etree as ET
@@ -46,29 +47,48 @@ _XLATE_TABLE = collections.defaultdict(
 _NORMALIZE_SPACE = re.compile(" +")
 
 
-def _to_text(nodes_or_text):
-    nodes_or_text = nodes_or_text or ""
-    return (nodes_or_text if isinstance(nodes_or_text, str)
-            else (nodes_or_text[0].xpath("string(.)")))
+def _to_text(f):
+    """Decorator to convert the arguments of an XPath extension function to
+    string."""
+    @functools.wraps(f)
+    def _f(self, ctx, nodes_or_text):
+        nodes_or_text = nodes_or_text or ""
+        element0 = (nodes_or_text[0] if isinstance(nodes_or_text, list)
+                    else nodes_or_text)
+        return f(self, ctx, element0 if isinstance(element0, str)
+                else element0.xpath("string(.)"))
+
+    return _f
 
 
-class _StaticExtensions:
-    def __init__(self, locale_fn=None):
+class _XPathExtensions:
+    def __init__(self, locale_fn=None, doxy_db=None):
         self._locale_fn = locale_fn or (lambda x: x)
+        self._doxy_db = doxy_db
 
-    def l(self, _, nodes_or_text):
+    @_to_text
+    def l(self, _, text):
         """Stub locale function. This is here so we can run the XSL transform
         without having to import sphinx."""
-        return self._locale_fn(_to_text(nodes_or_text))
+        return self._locale_fn(text)
 
-    def string_to_ids(self, _, nodes_or_text):
+    @_to_text
+    def string_to_ids(self, _, text):
         """Convert a string into something that is safe to use as a docutils ids
         field."""
         return _NORMALIZE_SPACE.sub(
-                "-", _to_text(nodes_or_text)).strip().translate(_XLATE_TABLE)
+                "-", text.strip()).translate(_XLATE_TABLE)
+
+    @_to_text
+    def guess_desctype(self, _, text):
+        return "" if not self._doxy_db else self._doxy_db.guess_desctype(text)
+
+    @_to_text
+    def refid_to_target(self, _, text):
+        return "" if not self._doxy_db else str(self._doxy_db.refid_to_target(text))
 
 
-def get_stylesheet(stylesheet_filename=None, locale_fn=None):
+def get_stylesheet(stylesheet_filename=None, locale_fn=None, doxy_db=None):
     """Get a XSLT stylesheet.
 
     If stylesheet_filename is not specified, the default sheet will be returned.
@@ -84,9 +104,9 @@ def get_stylesheet(stylesheet_filename=None, locale_fn=None):
                the identity function will be used.
     """
 
-    statics = _StaticExtensions(locale_fn)
+    custom_extension = _XPathExtensions(locale_fn, doxy_db)
 
-    ext = ET.Extension(statics, ns="antidox")
+    ext = ET.Extension(custom_extension, ns="antidox")
 
     if stylesheet_filename:
         parser = ET.XMLParser()

@@ -11,39 +11,15 @@
     <xsl:param name="hidedef" select="false()"/>
     <xsl:param name="hidedoc" select="false()"/>
 
-    <xsl:template match="/memberdef[@kind='function']">
-        <xsl:call-template name="memberdef-internal">
-            <xsl:with-param name="role">function</xsl:with-param>
-        </xsl:call-template>
-    </xsl:template>
-
-    <xsl:template match="/memberdef[@kind='typedef']">
-        <xsl:call-template name="memberdef-internal">
-            <xsl:with-param name="role">type</xsl:with-param>
-        </xsl:call-template>
-    </xsl:template>
-
-    <xsl:template match="/memberdef[@kind='define']">
-        <xsl:call-template name="memberdef-internal">
-            <xsl:with-param name="role">macro</xsl:with-param>
-        </xsl:call-template>
-    </xsl:template>
-
-    <xsl:template match="/memberdef[@kind='variable']">
-        <xsl:call-template name="memberdef-internal">
-            <xsl:with-param name="role">var</xsl:with-param>
-        </xsl:call-template>
-    </xsl:template>
-
-    <xsl:template name="memberdef-internal">
-        <xsl:param name = "role" />
+    <xsl:template match="/memberdef">
+        <xsl:param name="role" select="antidox:guess_desctype(@id)"/>
         <desc domain="c">
             <xsl:attribute name="noindex"><xsl:value-of select="$noindex"/></xsl:attribute>
             <xsl:attribute name="desctype"><xsl:value-of select="$role"/></xsl:attribute>
             <xsl:attribute name="objtype"><xsl:value-of select="$role"/></xsl:attribute>
             <desc_signature first="false">
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
-                <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
+                <xsl:attribute name="names"><xsl:value-of select="antidox:refid_to_target(@id)"/></xsl:attribute>
                 <xsl:apply-templates select="type|name"/>
                 <xsl:if test="argsstring/text()|param">
                 <desc_parameterlist>
@@ -73,7 +49,7 @@
             <xsl:attribute name="objtype">type</xsl:attribute>
             <desc_signature first="False">
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
-                <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
+                <xsl:attribute name="names"><xsl:value-of select="antidox:refid_to_target(@id)"/></xsl:attribute>
                 <desc_type><xsl:text>enum</xsl:text></desc_type>
                 <xsl:apply-templates select="name"/>
                 <xsl:if test="not($noindex)"><antidox:index/></xsl:if>

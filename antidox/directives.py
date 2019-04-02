@@ -513,4 +513,5 @@ class DoxyDomain(Domain):
         self.stylesheet_filename = env.app.config.antidox_xml_stylesheet
 
         self.stylesheet = get_stylesheet(self.stylesheet_filename,
-                                         locale_fn=_locale)
+                                         locale_fn=_locale,
+                                         doxy_db=env.antidox_db)
