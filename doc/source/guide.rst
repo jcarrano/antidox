@@ -29,6 +29,8 @@ Not all kinds are currently supported.
 
   Some important doxygen constructs may be missing.
 
+.. _entity_references:
+
 References
 ~~~~~~~~~~
 

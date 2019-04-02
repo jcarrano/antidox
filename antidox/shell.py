@@ -87,11 +87,19 @@ class Shell(cmd.Cmd):
                    "help", "sty")
 
     def __init__(self, doxydb=None, **kwargs):
+        self._stylesheet_fn = None
         self.db = doxydb
 
         super().__init__(**kwargs)
 
-        self.do_sty("")
+    @property
+    def db(self):
+        return self._db
+
+    @db.setter
+    def db(self, value):
+        self._db = value
+        self._reload_sty()
 
     def precmd(self, line):
         if line and self.db is None and line.strip().split()[0] not in self.NOINIT_CMDS:
@@ -328,9 +336,15 @@ class Shell(cmd.Cmd):
         sty [template.xsl]
 
         Load a XML template file. Call with no argument to restore the default.
+        The database will be reloaded each time the database is loaded.
         """
 
-        self.stylesheet = get_stylesheet(filename)
+        self.stylesheet = get_stylesheet(filename, doxy_db=self.db)
+        self._stylesheet_fn = filename
+
+    def _reload_sty(self):
+        """Reload the stylesheet (after a database load)"""
+        self.do_sty(self._stylesheet_fn)
 
     @_catch_doxy
     @_any_to_refid
