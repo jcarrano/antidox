@@ -424,18 +424,28 @@ class DoxyDB:
         #   p_prefix="", p_id="fxos8700__regs_8h"
         #
         self._db_conn.executescript("""
-        CREATE TABLE elements (prefix TEXT, id TEXT,
-                                   name TEXT NOT NULL,
-                                   kind Kind NOT NULL,
-                                   PRIMARY KEY (prefix, id)
-                                ON CONFLICT IGNORE
-                              );
-        CREATE TABLE hierarchy (prefix TEXT NOT NULL, id TEXT NOT NULL,
-                                   p_prefix TEXT NOT NULL, p_id TEXT NOT NULL,
-                    UNIQUE (prefix, id, p_prefix, p_id) ON CONFLICT REPLACE
-                                );
-        CREATE TABLE compound_kinds (kind Kind NOT NULL);
-        CREATE TABLE syn_compound_kinds (kind Kind NOT NULL);
+        PRAGMA foreign_keys = 1;
+
+        CREATE TABLE elements (
+            prefix TEXT, id TEXT,
+            name TEXT NOT NULL,
+            kind Kind NOT NULL,
+            PRIMARY KEY (prefix, id) ON CONFLICT IGNORE
+            );
+
+        CREATE TABLE hierarchy (
+            prefix TEXT NOT NULL, id TEXT NOT NULL,
+            p_prefix TEXT NOT NULL, p_id TEXT NOT NULL,
+            UNIQUE (prefix, id, p_prefix, p_id) ON CONFLICT REPLACE,
+            FOREIGN KEY(prefix, id) REFERENCES elements(prefix, id)
+            );
+
+        CREATE TABLE compound_kinds (kind Kind NOT NULL,
+                                     UNIQUE(kind)
+                                     );
+        CREATE TABLE syn_compound_kinds (kind Kind NOT NULL,
+                                         UNIQUE(kind)
+                                         );
         """)
 
         _compounds = Kind.compounds()
