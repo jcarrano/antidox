@@ -14,11 +14,8 @@ elements the transformation is straightforward as there is a direct
 correspondence. Special cases like directives, localization and indices are
 handled via the ``antidox`` XML namespace.
 
-The XSL processing step (converting to Doxygen XML into intermediate XML) is
-done in such a way that it should be possible to do it offline, using a generic
-XML processor. That means there a no special functions and no special template
-parameters. During normal operation, the intermediate XML is never written to
-a document, but it is kept in memory as an element tree.
+During normal operation, the intermediate XML is never written to a document,
+but it is kept in memory as an element tree.
 
 Standard Sphinx and reST nodes
 ------------------------------
@@ -35,6 +32,9 @@ Setting attributes
 Some nodes accept a list of values as arguments. XML element attributes, however,
 are always string. To work around this issue, antidox allows encoding lists for
 these attributes by using "|" as a separator.
+
+Additionally, the strings ``true`` and ``false`` are converted to Python's
+**bool()**.
 
 .. _xml-additional:
 
@@ -58,30 +58,41 @@ the same stylesheet is applied to a whole doxygen XML. In addition, an
 :ref:`antidox-fakeroot` may be necessary if many top-level elements are to
 be generated from a single XML node.
 
-antidox-specific attributes
----------------------------
+Global stylesheet parameters
+----------------------------
 
-``antidox:l`` (attribute)
-~~~~~~~~~~~~~~~~~~~~~~~~~
+The XSL following parameters are available at the global scope. Their value
+is derived from the rst:dir:`doxy:c` directive options.
 
-When set to ``"true"`` in a Text-derived element, the text is run through
-Sphinx's locale function.
+Boolean parameters
+~~~~~~~~~~~~~~~~~~
 
-``antidox:definition``
-~~~~~~~~~~~~~~~~~~~~~~
+These are set to ``true`` if the corresponding options is set, else they are
+``false``: :ref:`noindex <noindex-option>`, :ref:`hideloc <hideloc-option>`,
+:ref:`hidedoc <hidedoc-option>`, :ref:`hidedef <hidedef-option>`.
 
-When set to ``"true"`` in any element it indicates that it is a definition and
-should be skipped when the `:hidedef:` option is given.
+The typical use of ``noindex`` is to conditionally emit an
+:ref:`index node <antidox-indexnode>`:
 
-``antidox:content``
-~~~~~~~~~~~~~~~~~~~
+.. code-block: xslt
 
-When set to ``"true"`` in any element it indicates that it contains the
-documentation for the entity and thus must be skipped when the `:hidedoc:`
-option is given.
+  <xsl:if test="noindex!='true'"><antidox:index/></xsl:if>
 
-`desc_content` will have this attribute automatically set to "true", though it
-is still possible to override it.
+
+XPath extension functions
+-------------------------
+
+.. xpath-func:: antidox:l(node_or_text)
+
+   Run the specified text through Sphinx's *locale* function. If a node is
+   given, it is transformed into text via ``string(.)``.
+
+
+.. xpath-func:: antidox:string_to_ids(node_or_text)
+
+   Convert a string into something that is safe to use as a docutils ids
+   field. If a node is given, it is run through ``string(.)``. This is useful
+   for automatically generating anchors from section titles.
 
 antidox-specific (pseudo)elements
 ---------------------------------
@@ -96,7 +107,6 @@ If this element is not present, antidox will try to nest the directive body
 under a ``docutils.nodes.desc_content`` node. If none is found, it will be
 placed as a child of the last top level element.
 
-
 ``<antidox:children>``
 ~~~~~~~~~~~~~~~~~~~~~~
 
@@ -104,6 +114,14 @@ Placeholder for child elements. This node will be replaced by the subtrees of
 children that result from the :ref:`children option <children-option>` and
 :ref:`no-children option <no-children-option>`. By default children subtrees are
 appended to the last root element resulting from the transform.
+
+.. _antidox-indexnode:
+
+``<antidox:index>``
+~~~~~~~~~~~~~~~~~~~
+
+Places cross-reference entries (``sphinx.addnodes.index``). Additionally, if
+its parent has an ``ids`` attribute, it registers it in the proper domain.
 
 .. _antidox-fakeroot:
 

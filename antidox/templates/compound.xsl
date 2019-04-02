@@ -4,6 +4,13 @@
                 version="1.0">
     <xsl:output method="xml" indent="yes"/>
 
+    <!-- Global parameters. These are received from the directive options. -->
+
+    <xsl:param name="noindex" select="false()"/>
+    <xsl:param name="hideloc" select="false()"/>
+    <xsl:param name="hidedef" select="false()"/>
+    <xsl:param name="hidedoc" select="false()"/>
+
     <xsl:template match="/memberdef[@kind='function']">
         <xsl:call-template name="memberdef-internal">
             <xsl:with-param name="role">function</xsl:with-param>
@@ -30,34 +37,38 @@
 
     <xsl:template name="memberdef-internal">
         <xsl:param name = "role" />
-        <desc domain="c" noindex="False">
+        <desc domain="c">
+            <xsl:attribute name="noindex"><xsl:value-of select="$noindex"/></xsl:attribute>
             <xsl:attribute name="desctype"><xsl:value-of select="$role"/></xsl:attribute>
             <xsl:attribute name="objtype"><xsl:value-of select="$role"/></xsl:attribute>
-            <desc_signature first="False">
+            <desc_signature first="false">
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:apply-templates select="type|name"/>
                 <xsl:if test="argsstring/text()|param">
                 <desc_parameterlist>
                   <xsl:for-each select="param">
-                    <desc_parameter noemph="True">
+                    <desc_parameter noemph="true">
                         <xsl:apply-templates/>
                     </desc_parameter>
                   </xsl:for-each>
                 </desc_parameterlist>
                 </xsl:if>
-                <antidox:index/>
+                <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
             </desc_signature>
-            <desc_content>
-                <xsl:apply-templates select="briefdescription"/>
-                <xsl:apply-templates select="initializer"/>
-                <xsl:apply-templates select="detaileddescription"/>
-            </desc_content>
+            <xsl:if test="not($hidedoc)">
+                <desc_content>
+                    <xsl:apply-templates select="briefdescription"/>
+                    <xsl:apply-templates select="initializer"/>
+                    <xsl:apply-templates select="detaileddescription"/>
+                </desc_content>
+            </xsl:if>
         </desc>
     </xsl:template>
 
     <xsl:template match="/memberdef[@kind='enum']">
-        <desc domain="c" noindex="False">
+        <desc domain="c">
+            <xsl:attribute name="noindex"><xsl:value-of select="$noindex"/></xsl:attribute>
             <xsl:attribute name="desctype">type</xsl:attribute>
             <xsl:attribute name="objtype">type</xsl:attribute>
             <desc_signature first="False">
@@ -65,8 +76,9 @@
                 <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
                 <desc_type><xsl:text>enum</xsl:text></desc_type>
                 <xsl:apply-templates select="name"/>
-                <antidox:index/>
+                <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
             </desc_signature>
+            <xsl:if test="not($hidedoc)">
             <desc_content>
             <definition_list>
                 <xsl:for-each select="enumvalue">
@@ -77,11 +89,12 @@
                         -->
                         <term><xsl:value-of select="name"/><xsl:apply-templates select="initializer"/></term>
                         <definition><xsl:apply-templates select="briefdescription|detaileddescription"/></definition>
-                        <antidox:index/>
+                        <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
                     </definition_list_item>
                 </xsl:for-each>
             </definition_list>
             </desc_content>
+            </xsl:if>
         </desc>
     </xsl:template>
 
@@ -114,26 +127,31 @@
         <xsl:attribute name="names"><xsl:value-of select="@id"/>|<xsl:value-of select="compoundname"/>[<xsl:value-of select="@kind"/>]</xsl:attribute>
         <title><xsl:apply-templates select="briefdescription"/></title>
         <!-- Catch all that is outside a heading -->
+        <xsl:if test="not($hidedoc)">
         <xsl:apply-templates select="detaileddescription/para[not(text()[normalize-space()])]/child::*[not(preceding::heading or self::heading)]|
                                      detaileddescription/para[text()[normalize-space()] and not(preceding::heading or self::heading)]"/>
         <xsl:apply-templates select="detaileddescription/para/heading[@level=1]"/>
+        </xsl:if>
         </section>
     </xsl:template>
 
     <xsl:template match="/compounddef[@kind = 'struct' or @kind = 'union']">
-        <desc domain="c" noindex="False" desctype="type" objtype="type">
-            <desc_signature first="False">
+        <desc domain="c" desctype="type" objtype="type">
+            <xsl:attribute name="noindex"><xsl:value-of select="$noindex"/></xsl:attribute>
+            <desc_signature first="false">
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:attribute name="names"><xsl:value-of select="compoundname"/></xsl:attribute>
                 <desc_type><xsl:value-of select="@kind"/></desc_type>
                 <desc_name><xsl:text> </xsl:text><xsl:value-of select="compoundname" /></desc_name>
-                <antidox:index/>
+                <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
             </desc_signature>
-            <desc_content>
-                <xsl:apply-templates select="briefdescription"/>
-                <xsl:apply-templates select="detaileddescription"/>
-                <antidox:children/>
-            </desc_content>
+            <xsl:if test="not($hidedoc)">
+                <desc_content>
+                    <xsl:apply-templates select="briefdescription"/>
+                    <xsl:apply-templates select="detaileddescription"/>
+                    <antidox:children/>
+                </desc_content>
+            </xsl:if>
         </desc>
     </xsl:template>
 
@@ -154,8 +172,10 @@
     <xsl:template match="detaileddescription/para/heading">
         <xsl:variable name="heading" select="generate-id(.)"/>
         <xsl:variable name="level" select="number(@level)"/>
-        <section antidox:content="true"> <!-- TODO: add section ID (how do we handle duplicates?) -->
-            <xsl:attribute name="ids">c.<xsl:value-of select="ancestor::*/@id"/>-<xsl:call-template name="string-to-ids"/></xsl:attribute>
+        <!-- TODO: add section ID (how do we handle duplicates?) -->
+        <xsl:if test="not($hidedoc)">
+        <section>
+            <xsl:attribute name="ids"><xsl:value-of select="concat('c.',ancestor::*/@id,'-',antidox:string_to_ids(.))"/></xsl:attribute>
             <!-- Small workaround for trailing whitespace in titles -->
             <title><xsl:value-of select="normalize-space(.)"/></title>
             <xsl:apply-templates
@@ -163,6 +183,7 @@ select="parent::*/following-sibling::para[(ref or text()[normalize-space()]) and
 parent::*/following-sibling::para[not(ref or text()[normalize-space()])]/*[not(self::heading) and generate-id(preceding::heading[1])=$heading]|
 parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id(preceding::heading[$level=number(@level)][1])=$heading]"/>
         </section>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match="type">
@@ -278,7 +299,7 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
     </xsl:template>
 
     <xsl:template match='parameterlist'>
-        <rubric><xsl:text antidox:l="true">Parameters</xsl:text></rubric>
+        <rubric><xsl:value-of select="antidox:l('Parameters')"/></rubric>
         <field_list>
             <xsl:apply-templates/>
         </field_list>
@@ -308,24 +329,13 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
     </xsl:template>
 
     <xsl:template match="initializer">
-        <antidox:directive antidox:definition="true" antidox:name="code-block" linenos="">
+        <xsl:if test="not($hidedef)">
+        <antidox:directive antidox:name="code-block" linenos="">
         <antidox:directive-argument>c</antidox:directive-argument>
         <antidox:directive-content><xsl:value-of select="." /></antidox:directive-content>
         </antidox:directive>
+        </xsl:if>
     </xsl:template>
-
-    <!-- Convert a string into something that is safe to use as a docutils ids
-         field. -->
-    <xsl:template name="string-to-ids"><xsl:value-of select="
-          translate(
-            translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ ', 'abcdefghijklmnopqrstuvwxyz-'),
-            translate(
-              .,
-              'abcdefghijklmnopqrstuvwxyz0123456789-_',
-              ''
-            ),
-            ''
-          )" /></xsl:template>
 
     <!-- This prevents whitespace from polluting the output
          Without this template, text nodes end up as children of elements that

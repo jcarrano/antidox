@@ -79,15 +79,23 @@ Directives and roles are contained in an `doxy` domain.
 
   The following options are accepted:
 
+  .. _hidedef-option:
+
   ``hidedef``
     For macros and variables, do not show the definition.
 
+  .. _hideloc-option:
+
   ``hideloc``
-    Do not print the location in the source code of the definition (not
-    currently implemented.)
+    Do not print the location in the source code of the definition.
+
+  .. _noindex-option:
 
   ``noindex``
-    Do not add index entries (not currently implemented.)
+    Do not add index entries. This options is inherited by children included
+    automatically by the :ref:`:children: <children-option>` option.
+
+  .. _hidedoc-option:
 
   ``hidedoc``
     Do not render the text of the documentation. This is useful if you want
@@ -157,18 +165,16 @@ A custom stylesheet can inherit from (or include) the default one by using an
     <xsl:import href="antidox:compound"/>
   </xsl:stylesheet>
 
-Because the XML templating system is designed so as to make it possible to apply
-the transforms offline with standard tools (see :ref:`Design philosophy`), there is
-no access to the Doxygen database from within templates. This means that it is
-not possible to query the relationships (parent, children, etc) of the element
-being rendered from within the XSL template. The only information available is
-that which is exposed by Doxygen's XML. That this information is available is
-considered by the author of this extension to be a design mistake, because it
-is a consequence of duplicate data all across Doxygen-generated documents.
-Therefore, this information is not used in the built-in templates, and it is
-recommended that user-supplied templates do not either. Instead, a more flexible
-mechanism for including the documentation of child elements is provided in the
-form of events- see the next section.
+Currently, there is no access to the Doxygen database from within templates.
+This means that it is not possible to query the relationships (parent,
+children, etc) of the element being rendered from within the XSL template. The
+only information available is that which is exposed by Doxygen's XML. That this
+information is available is considered by the author of this extension to be a
+design mistake, because it is a consequence of duplicate data all across
+Doxygen-generated documents. Therefore, this information is not used in the
+built-in templates, and it is recommended that user-supplied templates do not
+either. Instead, a more flexible mechanism for including the documentation of
+child elements is provided in the form of events- see the next section.
 
 Events
 ------

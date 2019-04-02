@@ -116,4 +116,7 @@ def setup(app):
     app.add_object_type('event', 'event', 'pair: %s; event', parse_event,
                         doc_field_types=[fdesc])
 
+    app.add_object_type('xpath-func', 'xpath', 'pair: %s; xpath-func',
+                        parse_event)
+
     app.connect('autodoc-skip-member', include_enum_values)

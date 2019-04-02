@@ -58,12 +58,6 @@ This tool tries to reduce Doxygen to a tool for parsing code and comments and
 to give documentation writers explicit control over the layout and placement of
 the different entities.
 
-The templating and XML handling logic is designed so that in the future it is
-possible to run the XSL transformation online, using generic tools. For this
-reason, there should not be any custom functions defined and no stylesheet
-parameters that depend on the plugin to set them.
-
-
 Quickstart
 ----------
 

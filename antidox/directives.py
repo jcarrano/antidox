@@ -33,11 +33,6 @@ __copyright__ = "Copyright 2018, Freie Universität Berlin"
 logger = logging.getLogger(__name__)
 
 
-# Generic attributes that are handled by _etree_to_sphinx and should be removed
-# before creating a node.
-_GLOBAL_ATTRIBUTES = {"{antidox}l", "{antidox}definition", "{antidox}content"}
-
-
 class InvalidEntity(sphinx.errors.SphinxError):
     pass
 
@@ -196,15 +191,16 @@ class DoxyExtractor(Directive):
     optional_arguments = 0
 
     option_spec = {
-        'noindex': directives.flag,  # TODO: support noindex
+        'noindex': directives.flag,
         'hidedef': directives.flag,
-        'hideloc': directives.flag,  # TODO: support hideloc
+        'hideloc': directives.flag,
         'hidedoc': directives.flag,
         'children': string_list,
         'no-children': string_list,
     }
 
-    _node_hidings_opts = {'hidedef', 'hidedoc'}
+    _flag_parameters = [opt for opt, typ in option_spec.items()
+                        if typ == directives.flag]
 
     def add_target_and_index(self, name, sig, signode):
         # type: (Any, unicode, addnodes.desc_signature) -> None
@@ -231,46 +227,11 @@ class DoxyExtractor(Directive):
         """Get the DoxyDB object."""
         return self.env.antidox_db
 
-    @staticmethod
-    def _iterwalk_with_hiding(etree, hidedoc=False, hidedef=False):
-        """Iterator around ET.iterwalk that transparently skips {antidox}content
-        and {antidox}definition based on hidedoc and hidedef.
-
-        Returns
-        -------
-
-        Iterator yielding event, element just like ET.iterwalk. The events are
-        ("start", "end").
-        """
-        et_iter = ET.iterwalk(etree, events=("start", "end"))
-
-        skipped = False
-
-        for action, elem in et_iter:
-            if action == "start":
-                iscontent_default = "true" if elem.tag == 'desc_content' else "false"
-                if hidedoc and elem.attrib.get("{antidox}content", iscontent_default) == 'true':
-                    et_iter.skip_subtree()
-                    skipped = True
-                elif hidedef and elem.attrib.get("{antidox}definition") == 'true':
-                    et_iter.skip_subtree()
-                    skipped = True
-                else:
-                    yield action, elem
-            else:
-                if skipped:
-                    skipped = False
-                else:
-                    yield action, elem
-
-    def _etree_to_sphinx(self, etree, **kwargs):
+    def _etree_to_sphinx(self, etree):
         """Convert an element tree to sphinx nodes.
 
         A text node with a antidox:l attribute will be translated using sphinx
         locale features.
-
-        kwargs will be passed to _iterwalk_with_hiding to determine which nodes
-        to skip.
 
         Return
         ------
@@ -286,27 +247,25 @@ class DoxyExtractor(Directive):
 
         special = {}
 
+        str2bool = {"false": False, "true": True}
+
         if etree.getroot() is None:
             logger.warn("Template produced no elements for %s",
                         self.arguments[0])
             return [], special
 
-        for action, elem in self._iterwalk_with_hiding(etree, **kwargs):
+        for action, elem in ET.iterwalk(etree, events=("start", "end")):
             if action == "start":
                 nclass = nodeclass_from_tag(elem.tag)
 
-                text = elem.text or (_locale(elem.text)
-                                     if elem.attrib.get("{antidox}l", False)
-                                     else elem.text)
-
-                arg = text if issubclass(nclass, Text) else ''
+                arg = elem.text if issubclass(nclass, Text) else ''
 
                 # automatically handle list attributes
                 list_attributes = getattr(nclass, "list_attributes", ())
                 filtered_attrs = {k: (v.split("|")
-                                      if k in list_attributes else v)
-                                  for (k, v) in elem.attrib.items()
-                                  if k not in _GLOBAL_ATTRIBUTES}
+                                      if k in list_attributes
+                                      else str2bool.get(v, v))
+                                  for (k, v) in elem.attrib.items()}
 
                 node = nclass(arg, **filtered_attrs)
                 if not isinstance(node, Text) and elem.text:
@@ -361,7 +320,7 @@ class DoxyExtractor(Directive):
             nodes = [content_container]
         else:
             child_index = nodes[0].first_child_matching_class(
-                                                        addnodes.desc_content)
+                addnodes.desc_content)
             content_container = (nodes[0][child_index]
                                  if child_index is not None else nodes[-1])
 
@@ -376,9 +335,13 @@ class DoxyExtractor(Directive):
             else:
                 uc_index = nodes.index(uccontent)
                 nodes[uc_index:uc_index+1] = content_container.children
-            assert(nodes if self.content else True)
+            assert nodes if self.content else True
 
         return nodes
+
+    def _options_to_params(self):
+        return {k: 'true()' if k in self.options else 'false()'
+                for k in self._flag_parameters}
 
     def run_reference(self, ref):
         """Convert the doxygen XML of a reference into Sphinx nodes.
@@ -392,15 +355,14 @@ class DoxyExtractor(Directive):
         nodes: List of sphinx nodes.
         special: a dictionary of special nodes (subclasses of DeferredPlaceholder)
         """
-        # TODO: support noindex
 
         element_tree = self.db.get_tree(ref)
 
         my_domain = self.env.domains['doxy']
-        rst_etree = my_domain.stylesheet(element_tree)
-        nodes, special = self._etree_to_sphinx(
-            rst_etree,
-            **{k: k in self.options for k in self._node_hidings_opts})
+
+        rst_etree = my_domain.stylesheet(element_tree,
+                                         **self._options_to_params())
+        nodes, special = self._etree_to_sphinx(rst_etree)
 
         style_fn = my_domain.stylesheet_filename
         if style_fn:
@@ -469,7 +431,7 @@ def target_role(typ, rawtext, text, lineno, inliner, options={}, content=[]):
     is_explicit, title, _target = split_explicit_title(text.strip())
 
     title = title.strip()
-    _target=_target.strip()
+    _target = _target.strip()
 
     remove_path = _target.startswith("~")
 
@@ -550,7 +512,8 @@ class DoxyDomain(Domain):
 
         self.stylesheet_filename = env.app.config.antidox_xml_stylesheet
 
-        self.stylesheet = get_stylesheet(self.stylesheet_filename)
+        self.stylesheet = get_stylesheet(self.stylesheet_filename,
+                                         locale_fn=_locale)
 
     def merge_domaindata(self, docnames, otherdata):
         """Nothing to do here."""
