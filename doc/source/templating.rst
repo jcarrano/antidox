@@ -88,7 +88,7 @@ XPath extension functions
   given, it is transformed into text via ``string(.)``.
 
 
-.. xpath-func:: antidox:string_to_ids(node_or_text)
+.. xpath-func:: antidox:string-to-ids(node_or_text)
 
   Convert a string into something that is safe to use as a docutils ids
   field. If a node is given, it is run through ``string(.)``. This is useful

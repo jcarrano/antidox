@@ -165,7 +165,7 @@
         <!-- TODO: add section ID (how do we handle duplicates?) -->
         <xsl:if test="not($hidedoc)">
         <section>
-            <xsl:attribute name="ids"><xsl:value-of select="concat('c.',ancestor::*/@id,'-',antidox:string_to_ids(.))"/></xsl:attribute>
+            <xsl:attribute name="ids"><xsl:value-of select="concat('c.',ancestor::*/@id,'-',antidox:string-to-ids(.))"/></xsl:attribute>
             <!-- Small workaround for trailing whitespace in titles -->
             <title><xsl:value-of select="normalize-space(.)"/></title>
             <xsl:apply-templates

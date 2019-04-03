@@ -18,6 +18,39 @@ __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
 
 
+# Load basic text functions
+
+
+def _to_text(nodes_or_text):
+    """Convert a xpath object (a string or a list of nodes) to string"""
+    element0 = (nodes_or_text[0] if isinstance(nodes_or_text, list)
+                else nodes_or_text)
+    return (element0 if isinstance(element0, str)
+            else element0.xpath("string(.)"))
+
+
+def _textfunc(f):
+    """Decorator to convert the arguments of an XPath extension function to
+    string."""
+    @functools.wraps(f)
+    def _f(ctx, nodes_or_text):
+        return f(_to_text(nodes_or_text))
+
+    return _f
+
+
+_basic_ns = ET.FunctionNamespace("antidox")
+
+
+@_basic_ns("string-to-ids")
+@_textfunc
+def _string_to_ids(text):
+    """Convert a string into something that is safe to use as a docutils ids
+    field."""
+    return _NORMALIZE_SPACE.sub(
+        "-", text.strip()).translate(_XLATE_TABLE)
+
+
 def _get_compound_xsl_text():
     return get_data(__package__, os.path.join("templates", "compound.xsl"))
 
@@ -47,16 +80,12 @@ _XLATE_TABLE = collections.defaultdict(
 _NORMALIZE_SPACE = re.compile(" +")
 
 
-def _to_text(f):
-    """Decorator to convert the arguments of an XPath extension function to
+def _textmeth(f):
+    """Decorator to convert the arguments of an XPath extension method to
     string."""
     @functools.wraps(f)
     def _f(self, ctx, nodes_or_text):
-        nodes_or_text = nodes_or_text or ""
-        element0 = (nodes_or_text[0] if isinstance(nodes_or_text, list)
-                    else nodes_or_text)
-        return f(self, ctx, element0 if isinstance(element0, str)
-                else element0.xpath("string(.)"))
+        return f(self, ctx, _to_text(nodes_or_text))
 
     return _f
 
@@ -66,24 +95,17 @@ class _XPathExtensions:
         self._locale_fn = locale_fn or (lambda x: x)
         self._doxy_db = doxy_db
 
-    @_to_text
+    @_textmeth
     def l(self, _, text):
         """Stub locale function. This is here so we can run the XSL transform
         without having to import sphinx."""
         return self._locale_fn(text)
 
-    @_to_text
-    def string_to_ids(self, _, text):
-        """Convert a string into something that is safe to use as a docutils ids
-        field."""
-        return _NORMALIZE_SPACE.sub(
-                "-", text.strip()).translate(_XLATE_TABLE)
-
-    @_to_text
+    @_textmeth
     def guess_desctype(self, _, text):
         return "" if not self._doxy_db else self._doxy_db.guess_desctype(text)
 
-    @_to_text
+    @_textmeth
     def refid_to_target(self, _, text):
         return "" if not self._doxy_db else str(self._doxy_db.refid_to_target(text))
 
