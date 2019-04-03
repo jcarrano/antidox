@@ -30,7 +30,7 @@
                   </xsl:for-each>
                 </desc_parameterlist>
                 </xsl:if>
-                <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
+                <xsl:call-template name="keyed-index"/>
             </desc_signature>
             <xsl:if test="not($hidedoc)">
                 <desc_content>
@@ -43,6 +43,7 @@
     </xsl:template>
 
     <xsl:template match="/memberdef[@kind='enum']">
+        <xsl:param name="enumname" select="name"/>
         <desc domain="c">
             <xsl:attribute name="noindex"><xsl:value-of select="$noindex"/></xsl:attribute>
             <xsl:attribute name="desctype">type</xsl:attribute>
@@ -52,7 +53,7 @@
                 <xsl:attribute name="names"><xsl:value-of select="antidox:refid_to_target(@id)"/></xsl:attribute>
                 <desc_type><xsl:text>enum</xsl:text></desc_type>
                 <xsl:apply-templates select="name"/>
-                <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
+                <xsl:call-template name="keyed-index"/>
             </desc_signature>
             <xsl:if test="not($hidedoc)">
             <desc_content>
@@ -65,13 +66,26 @@
                         -->
                         <term><xsl:value-of select="name"/><xsl:apply-templates select="initializer"/></term>
                         <definition><xsl:apply-templates select="briefdescription|detaileddescription"/></definition>
-                        <xsl:if test="not($noindex)"><antidox:index/></xsl:if>
+                        <xsl:call-template name="keyed-index">
+                            <xsl:with-param name="key-word"><xsl:value-of select="$enumname"/></xsl:with-param>
+                        </xsl:call-template>
                     </definition_list_item>
                 </xsl:for-each>
             </definition_list>
             </desc_content>
             </xsl:if>
         </desc>
+    </xsl:template>
+
+    <!-- Create an index entry using the first letter of "key-word" (by default
+         the key-word is taken from the <name> element) -->
+    <xsl:template name="keyed-index">
+        <xsl:param name="key-word" select="name"/>
+        <xsl:if test="not($noindex)">
+            <antidox:index>
+                <xsl:attribute name="key"><xsl:value-of select="substring($key-word, 1, 1)"/></xsl:attribute>
+            </antidox:index>
+        </xsl:if>
     </xsl:template>
 
     <xsl:template match="enumvalue/initializer">

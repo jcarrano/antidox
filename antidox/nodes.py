@@ -128,7 +128,8 @@ class Index(PlaceHolder, _nodes.Inline, _nodes.TextElement):
         raise ValueError("objtype not found")
 
     def run_directive(self, *args, **kwargs):
-        return [addnodes.index(entries=[("single", name, id_, '', None)])
+        key = self.get("key", None)
+        return [addnodes.index(entries=[("single", name, id_, '', key)])
                 for id_, name in zip(self.parent['ids'], self.parent['names'])]
 
     def replace_placeholder(self, lineno, state, state_machine):

@@ -144,6 +144,13 @@ appended to the last root element resulting from the transform.
 Places cross-reference entries (``sphinx.addnodes.index``). Additionally, if
 its parent has an ``ids`` attribute, it registers it in the proper domain.
 
+Attributes:
+
+``key``
+  String to be used as ``key`` for the alphabetical index. It is usually a
+  single letter (the first in the indexed name), but a word can be used too.
+  For more information see the documentation for sphinx.addnodes.indexnode_.
+
 .. _antidox-fakeroot:
 
 ``<antidox:fakeroot>``
@@ -216,3 +223,7 @@ and ``xsl:include`` statements, for example
 The reason the built-in style is exposed this way and not with a filename is
 that the file may not exist: for example, this extension may be installed as a
 zipfile. You can obtain the contents of the built-in stylesheet using the shell.
+
+
+.. _sphinx.addnodes.indexnode:
+  https://www.sphinx-doc.org/en/master/extdev/nodes.html#sphinx.addnodes.index
