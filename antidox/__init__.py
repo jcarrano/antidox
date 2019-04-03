@@ -39,11 +39,14 @@ def load_db(app):
         env.antidox_db = doxy.DoxyDB(cfgdir)
         env.antidox_db_date = cfgdir_time
 
+    app.emit("antidox-db-loaded", env.antidox_db)
+
 
 def setup(app):
     app.add_config_value("antidox_doxy_xml_dir", "", 'env')
     app.add_config_value("antidox_xml_stylesheet", "", 'env')
     app.add_event("antidox-include-children")
+    app.add_event("antidox-db-loaded")
 
     # TODO: provide support for multiple Doxygen projects
     app.connect("builder-inited", load_db)

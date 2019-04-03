@@ -202,3 +202,10 @@ Events
 
   .. literalinclude:: ../../examples/riot/conf.py
    :lines: 166-182,195-197
+
+.. event:: antidox-db-loaded (app, db)
+
+  Emmited after the Doxygen database is read and loaded into the environment.
+
+  :param app: the Sphinx application object
+  :param db: a :py:class:`antidox.doxy.DoxyDB` instance.

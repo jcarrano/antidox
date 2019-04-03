@@ -512,9 +512,12 @@ class DoxyDomain(Domain):
 
         self.stylesheet_filename = env.app.config.antidox_xml_stylesheet
 
+        env.app.connect("antidox-db-loaded", self._load_stylesheet)
+
+    def _load_stylesheet(self, app, db):
         self.stylesheet = get_stylesheet(self.stylesheet_filename,
                                          locale_fn=_locale,
-                                         doxy_db=env.antidox_db)
+                                         doxy_db=db)
 
     def merge_domaindata(self, docnames, otherdata):
         """Nothing to do here."""
