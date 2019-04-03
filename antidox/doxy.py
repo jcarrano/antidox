@@ -494,6 +494,14 @@ class DoxyDB:
 
             this_refid = RefId(elem.attrib["refid"])
             kind = Kind.from_attr(elem.attrib["kind"])
+
+            # Doxygen wrongly places enumvalues as direct children of files
+            # instead of the containing enum.
+            # Let's skip the parent for now and we set it correctly when
+            # reading the inner files.
+            if kind == Kind.ENUMVALUE:
+                p_refid = None
+
             try:
                 name = elem.attrib["name"]
             except KeyError as e:
@@ -522,17 +530,29 @@ class DoxyDB:
             if elem.tag == "compounddef":
                 p_refid = RefId(elem.attrib["id"])
             else:
-                s, inner, innerkind = elem.tag.partition("inner")
-                if s:  # the tag does not start with "inner"
-                    continue
+                # the enumvalue is a workaround to nest enumvalues under enums
+                if elem.tag == "enumvalue":
+                    parent_elem = elem.getparent()
+                    if not parent_elem.tag == "memberdef":
+                        raise ConsistencyError(
+                            "expected parent of enumvalue to be a memberdef")
+                    this_parent = RefId(parent_elem.attrib["id"])
+                    id_attr = elem.attrib["id"]
+                else:
+                    s, inner, innerkind = elem.tag.partition("inner")
+                    if s:  # the tag does not start with "inner"
+                        continue
 
-                if not Kind.tag_supported(innerkind):
-                    continue
+                    if not Kind.tag_supported(innerkind):
+                        continue
 
-                this_refid = RefId(elem.attrib["refid"])
+                    this_parent = p_refid
+                    id_attr = elem.attrib["refid"]
+
+                this_refid = RefId(id_attr)
 
                 self._db_conn.execute("INSERT INTO hierarchy values (?, ?, ?, ?)",
-                                      this_refid + p_refid)
+                                      this_refid + this_parent)
 
     # TODO: this may need caching???
     @_refid_str
@@ -846,6 +866,31 @@ class DoxyDB:
 
         return self._cur_to_refid(cur, (kind, name), scope is not None)
 
+    def _first_parent(self, refid, kind):
+        """Return the first compound containing an entity."""
+        if kind in Kind.subordinate():
+            cur = self._db_conn.execute(
+            """SELECT h1.p_prefix, h1.p_id
+            FROM hierarchy as h1 INNER JOIN elements
+                ON h1.p_prefix = elements.prefix AND h1.p_id = elements.id
+            INNER JOIN hierarchy as h2
+                ON h1.prefix = h2.p_prefix AND h1.id = h2.p_id
+            WHERE h2.prefix = ?
+                AND h2.id = ?
+                AND kind in compound_kinds
+            """, refid)
+            solutions = (RefId(*ref) for ref in cur)
+        else:
+            solutions = (res.refid for res in self.find_parents(refid))
+
+        # Doxygen defines the same member in more than one place.
+        # It is wasteful, though it makes our life easier.
+        try:
+            return next(solutions)
+        except StopIteration as e:
+            raise ConsistencyError(
+                    "Cannot find compound containing {}".format(refid)) from e
+
     @_refid_str
     def get_tree(self, refid):
         """Get the xml element tree for an element"""
@@ -856,12 +901,8 @@ class DoxyDB:
             definition_file_base = refid
             xpathq = '//compounddef[@id=$id]'
         else:
-            # Doxygen defines the same member in more than one place.
-            # It is wasteful, though it makes our life easier.
-            try:
-                definition_file_base = next(res.refid for res in self.find_parents(refid))
-            except StopIteration as e:
-                raise ConsistencyError("Cannot find compound containing %s" % refid) from e
+            definition_file_base = self._first_parent(refid, refkind)
+
             # FIXME: this code looks ugly
             xpathq = ('//memberdef[@id=$id]'
                       if not refkind in Kind.subordinate()
