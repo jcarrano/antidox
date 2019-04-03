@@ -84,35 +84,35 @@ XPath extension functions
 
 .. xpath-func:: antidox:l(node_or_text)
 
-   Run the specified text through Sphinx's *locale* function. If a node is
-   given, it is transformed into text via ``string(.)``.
+  Run the specified text through Sphinx's *locale* function. If a node is
+  given, it is transformed into text via ``string(.)``.
 
 
 .. xpath-func:: antidox:string_to_ids(node_or_text)
 
-   Convert a string into something that is safe to use as a docutils ids
-   field. If a node is given, it is run through ``string(.)``. This is useful
-   for automatically generating anchors from section titles.
+  Convert a string into something that is safe to use as a docutils ids
+  field. If a node is given, it is run through ``string(.)``. This is useful
+  for automatically generating anchors from section titles.
 
 
 .. xpath-func:: antidox:guess_desctype(refid)
 
-   Try to guess the C domain role for the given refid (usually the given as
-   the "id" attribute of a node.) This is usually needed to set the ``desctype``
-   and ``objtype`` in ``desc`` nodes.
+  Try to guess the C domain role for the given refid (usually the given as
+  the "id" attribute of a node.) This is usually needed to set the ``desctype``
+  and ``objtype`` in ``desc`` nodes.
 
-   This function maps to :py:meth:`antidox.doxy.DoxyDB.guess_desctype`.
+  This function maps to :py:meth:`antidox.doxy.DoxyDB.guess_desctype`.
 
 
 .. xpath-func:: antidox:refid_to_target(refid)
 
-   Generate a :ref:`target string <entity_references>` from a refid. This
-   function maps to  :py:meth:`antidox.doxy.DoxyDB.refid_to_target`.
+  Generate a :ref:`target string <entity_references>` from a refid. This
+  function maps to  :py:meth:`antidox.doxy.DoxyDB.refid_to_target`.
 
-   .. todo::
+  .. todo::
 
-     antidox-indexnode_ should recognize targets in "name" attributes and set
-     the "initial" letter correctly for the index.
+    antidox-indexnode_ should recognize targets in "name" attributes and set
+    the "initial" letter correctly for the index.
 
 
 antidox-specific (pseudo)elements
