@@ -150,6 +150,7 @@ Configuration variables
   (Optional) Specify an alternative stylesheet. See `Customization`_ for
   instructions on how to define your own stylesheet.
 
+
 Customization
 -------------
 
@@ -181,7 +182,7 @@ child elements is provided in the form of events- see the next section.
 Events
 ------
 
-.. event:: antidox-include-children (app, this, options)
+.. event:: antidox-include-default (app, this, options)
 
   Emitted once for every :rst:dir:`c` directive, to determine which child
   elements should be included. antidox will select the first non-``None`` value.
@@ -197,11 +198,30 @@ Events
   :param this: refid for the object currently being documented.
   :param options: dictionary with the options given to the directive.
 
+
+.. event:: antidox-include-children (app, this, options, children)
+
+  Emitted once for every :rst:dir:`c` directive, after the list of children to
+  include has been determined.
+
+  Handlers can inspect and modify the children list by adding or removing
+  elements or changing the options.
+  All registered handlers will be run as long as they all return ``None``. This
+  allows combining different filtering behaviors. Processing handlers will stop
+  as soon as one of them returns a non-None value.
+
+  :param app: the Sphinx application object
+  :param this: refid for the object currently being documented.
+  :param options: dictionary with the options given to the directive.
+  :param children: A list of (refid, options) tuples, as returned by the
+    :event:`antidox-include-default` event.
+
   For example, you can use this event to exclude struct members that start with
   and underscore:
 
   .. literalinclude:: ../../examples/riot/conf.py
-   :lines: 166-182,195-197
+   :lines: 166-181,202-205
+
 
 .. event:: antidox-db-loaded (app, db)
 

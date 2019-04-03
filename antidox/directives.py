@@ -124,9 +124,23 @@ def _empty_to_universe(s):
     return (s or _Universe) if s is not None else ()
 
 
+_DEFAULT_CHILDREN_KINDS = (doxy.Kind.ENUM, doxy.Kind.STRUCT)
+
+
+def _add_default_options_(inherited, kind, this_kind):
+    option_copy = inherited.copy()
+
+    if kind == this_kind:
+        option_copy.update({'no-children': ''})
+    if kind in _DEFAULT_CHILDREN_KINDS:
+        option_copy.update({'children': ''})
+
+    return option_copy
+
+
 def default_inclusion_policy(app, this, options):
     """Default behavior used when no callback handles the
-    ``antidox-include-children`` event.
+    ``antidox-include-default`` event.
 
     If ``no-children`` is empty, it is taken to mean "exclude everything". If
     ``children`` is empty it is taken include everything (with exceptions).
@@ -134,6 +148,9 @@ def default_inclusion_policy(app, this, options):
     The exceptions are that children with the same kind as the parent won't be
     included unless explicitly named and if they are included they will have
     ``no-children`` set.
+
+    Flag options are inherited by default. Some kinds ("struct" and "enum", will
+    have "children" set by default.)
     """
     db = app.env.antidox_db
 
@@ -145,17 +162,24 @@ def default_inclusion_policy(app, this, options):
 
         this_kind = db.get(this)['kind']
 
+        # By default, inherit all flags
+        inherited_options = {k: v for k, v in options.items()
+                             if k in DoxyExtractor._flag_parameters}
+        inherited_nochildren = inherited_options.copy().update(
+            {'no-children': ''})
+
         def _member_accept(name, kind):
             return ((kind != this_kind) if yes_children is _Universe
                     else (name in yes_children))
 
-        inclusion_list = [(ref, {}) for ref, name, kind in all_child_members
+        inclusion_list = [(ref, _add_default_options_(inherited_options, kind,
+                                                      this_kind))
+                          for ref, name, kind in all_child_members
                           if name in yes_children
-                          and kind not in doxy.Kind.subordinate()
                           and name not in no_children]
 
         inclusion_list.extend(
-            (ref, {} if kind != this_kind else {'no-children': ''})
+            (ref, _add_default_options_(inherited_options, kind, this_kind))
             for ref, name, kind in all_child_compounds
             if _member_accept(name, kind)
             and name not in no_children)
@@ -390,11 +414,15 @@ class DoxyExtractor(Directive):
 
             ev_args = (ref, self.options)
             ev_result = self.env.app.emit_firstresult(
-                                "antidox-include-children", *ev_args)
+                                "antidox-include-default", *ev_args)
             inclusion_list = (ev_result if ev_result is not None else
                               (default_inclusion_policy(self.env.app, *ev_args)
-                               or ())
+                               or [])
                               )
+
+            self.env.app.emit_firstresult(
+                                "antidox-include-children",
+                                ref, self.options, inclusion_list)
 
             this_directive = type(self)
 

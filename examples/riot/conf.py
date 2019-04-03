@@ -169,30 +169,37 @@ import re
 
 _SINGLE_UNDERSCORE = re.compile("^_[^_].*")
 
-def struct_no_undescore(app, this, options):
+def struct_no_undescore(app, this, options, children):
     """Handle the antidox-include-children event and cause it to skip struct
     members that start with a single underscore"""
     db = app.env.antidox_db
 
     if db.get(this)['kind'] == antidox.doxy.Kind.STRUCT:
-        pre_inclusion = antidox.directives.default_inclusion_policy(app, this, options)
-
-        # pre_inclusion may be None
-        return pre_inclusion and [(k, v) for k, v in pre_inclusion
-                if not _SINGLE_UNDERSCORE.fullmatch(db.get(k)['name'])]
+        for el in [(k, v) for k, v in children
+                    if _SINGLE_UNDERSCORE.fullmatch(db.get(k)['name'])]:
+            children.remove(el)
 
 
-def group_no_files(app, this, options):
+def group_no_files(app, this, options, children):
     """Exclude files from groups' documentations"""
     db = app.env.antidox_db
 
     if db.get(this)['kind'] == antidox.doxy.Kind.GROUP:
-        pre_inclusion = antidox.directives.default_inclusion_policy(app, this, options)
+        for el in [(k, v) for k, v in children
+                   if db.get(k)['kind'] == antidox.doxy.Kind.FILE]:
+            children.remove(el)
 
-        return pre_inclusion and [(k, v) for k, v in pre_inclusion
-                                  if db.get(k)['kind'] != antidox.doxy.Kind.FILE]
+
+def fix_repeated_enum_elements(app, this, options, children):
+    db = app.env.antidox_db
+
+    if db.get(this)['kind'] == antidox.doxy.Kind.ENUM:
+        unique_elements = dict(children)
+        children.clear()
+        children.extend(unique_elements.items())
 
 
 def setup(app):
     app.connect("antidox-include-children", struct_no_undescore)
     app.connect("antidox-include-children", group_no_files)
+    app.connect("antidox-include-children", fix_repeated_enum_elements)

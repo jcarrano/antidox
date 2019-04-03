@@ -58,23 +58,28 @@
             <xsl:if test="not($hidedoc)">
             <desc_content>
             <definition_list>
-                <xsl:for-each select="enumvalue">
-                    <definition_list_item objtype="value">
-                        <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
-                        <!-- This causes repeated ids
-                        <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
-                        -->
-                        <term><xsl:value-of select="name"/><xsl:apply-templates select="initializer"/></term>
-                        <definition><xsl:apply-templates select="briefdescription|detaileddescription"/></definition>
-                        <xsl:call-template name="keyed-index">
-                            <xsl:with-param name="key-word"><xsl:value-of select="$enumname"/></xsl:with-param>
-                        </xsl:call-template>
-                    </definition_list_item>
-                </xsl:for-each>
+                <antidox:children/>
             </definition_list>
             </desc_content>
             </xsl:if>
         </desc>
+    </xsl:template>
+
+    <!-- FIXME: this will catch fire if someone tries to include an enumvalue
+         outside an enum!!! -->
+    <xsl:template match="/enumvalue">
+        <definition_list_item objtype="value">
+            <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
+            <!-- This causes repeated ids
+            <xsl:attribute name="names"><xsl:value-of select="@id"/></xsl:attribute>
+            -->
+            <term><xsl:value-of select="name"/><xsl:apply-templates select="initializer"/></term>
+            <definition><xsl:apply-templates select="briefdescription|detaileddescription"/></definition>
+            <xsl:call-template name="keyed-index">
+                <!-- FIXME: restore "$enumname" -->
+                <xsl:with-param name="key-word"><xsl:value-of select="name"/></xsl:with-param>
+            </xsl:call-template>
+        </definition_list_item>
     </xsl:template>
 
     <!-- Create an index entry using the first letter of "key-word" (by default

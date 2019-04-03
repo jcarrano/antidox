@@ -45,6 +45,7 @@ def load_db(app):
 def setup(app):
     app.add_config_value("antidox_doxy_xml_dir", "", 'env')
     app.add_config_value("antidox_xml_stylesheet", "", 'env')
+    app.add_event("antidox-include-default")
     app.add_event("antidox-include-children")
     app.add_event("antidox-db-loaded")
 
