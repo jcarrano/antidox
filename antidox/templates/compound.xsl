@@ -83,7 +83,7 @@
         <xsl:param name="key-word" select="name"/>
         <xsl:if test="not($noindex)">
             <antidox:index>
-                <xsl:attribute name="key"><xsl:value-of select="substring($key-word, 1, 1)"/></xsl:attribute>
+                <xsl:attribute name="key"><xsl:value-of select="antidox:upper-case(substring($key-word, 1, 1))"/></xsl:attribute>
             </antidox:index>
         </xsl:if>
     </xsl:template>

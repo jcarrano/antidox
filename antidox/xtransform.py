@@ -42,6 +42,18 @@ def _textfunc(f):
 _basic_ns = ET.FunctionNamespace("antidox")
 
 
+@_basic_ns("upper-case")
+@_textfunc
+def _upper_case(text):
+    return text.upper()
+
+
+@_basic_ns("lower-case")
+@_textfunc
+def _lower_case(text):
+    return text.lower()
+
+
 @_basic_ns("string-to-ids")
 @_textfunc
 def _string_to_ids(text):

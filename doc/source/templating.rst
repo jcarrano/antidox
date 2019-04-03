@@ -115,6 +115,16 @@ XPath extension functions
     the "initial" letter correctly for the index.
 
 
+.. xpath-func:: antidox:lower-case(node_or_text)
+
+  Convert text to lower-case (similar to the same name function in XPath 2.0.)
+
+
+.. xpath-func:: antidox:upper-case(node_or_text)
+
+  Convert text to upper-case (similar to the same name function in XPath 2.0.)
+
+
 antidox-specific (pseudo)elements
 ---------------------------------
 
