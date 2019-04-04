@@ -120,7 +120,7 @@
         <section>
         <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
         <xsl:attribute name="names"><xsl:value-of select="@id"/>|<xsl:value-of select="compoundname"/>[<xsl:value-of select="@kind"/>]</xsl:attribute>
-        <title><xsl:apply-templates select="title"/></title>
+        <xsl:apply-templates select="title|compoundname"/>
         <subtitle><xsl:apply-templates select="briefdescription"/></subtitle>
         <!-- Catch all that is outside a heading -->
         <xsl:if test="not($hidedoc)">
@@ -130,6 +130,14 @@
         <xsl:apply-templates select="detaileddescription/para/heading[@level=1]"/>
         </xsl:if>
         </section>
+    </xsl:template>
+
+    <xsl:template match="/compounddef/title">
+        <title><xsl:apply-templates/></title>
+    </xsl:template>
+
+    <xsl:template match="/compounddef[not(title)]/compoundname/text()">
+        <title><xsl:copy/></title>
     </xsl:template>
 
     <xsl:template match="/compounddef[@kind = 'struct' or @kind = 'union']">
