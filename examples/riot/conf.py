@@ -190,16 +190,6 @@ def group_no_files(app, this, options, children):
             children.remove(el)
 
 
-def fix_repeated_enum_elements(app, this, options, children):
-    db = app.env.antidox_db
-
-    if db.get(this)['kind'] == antidox.doxy.Kind.ENUM:
-        unique_elements = dict(children)
-        children.clear()
-        children.extend(unique_elements.items())
-
-
 def setup(app):
     app.connect("antidox-include-children", struct_no_undescore)
     app.connect("antidox-include-children", group_no_files)
-    app.connect("antidox-include-children", fix_repeated_enum_elements)
