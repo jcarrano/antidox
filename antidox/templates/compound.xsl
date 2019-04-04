@@ -120,7 +120,8 @@
         <section>
         <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
         <xsl:attribute name="names"><xsl:value-of select="@id"/>|<xsl:value-of select="compoundname"/>[<xsl:value-of select="@kind"/>]</xsl:attribute>
-        <title><xsl:apply-templates select="briefdescription"/></title>
+        <title><xsl:apply-templates select="title"/></title>
+        <subtitle><xsl:apply-templates select="briefdescription"/></subtitle>
         <!-- Catch all that is outside a heading -->
         <xsl:if test="not($hidedoc)">
         <xsl:apply-templates select="detaileddescription/para[not(text()[normalize-space()])]/child::*[not(preceding::heading or self::heading)]|
@@ -191,13 +192,18 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
 
     <!-- Using doxy:r here instead of directly inserting a pending_xref allows
          more robust handling of the different kind of references in doxygen. -->
-    <xsl:template match="ref">
+    <!-- TODO: figure out how to put hyperlinks in program listings. -->
+    <xsl:template match="ref[not(ancestor::programlisting)]">
         <!-- FIXME: some compounds should be not be given explicit titles. Maybe
              no reference should be given a explicit title??? -->
         <antidox:interpreted role="doxy:r">
         <xsl:if test="@kindref!='member'"><xsl:value-of select="."/><xsl:text> &lt;</xsl:text></xsl:if>
         !<xsl:value-of select="@refid"/><xsl:if test="@kindref!='member'"><xsl:text>&gt;</xsl:text></xsl:if>
         </antidox:interpreted>
+    </xsl:template>
+
+    <xsl:template match="ref[ancestor::programlisting]">
+        <xsl:value-of select="."/>
     </xsl:template>
 
     <xsl:template match="orderedlist">
@@ -339,6 +345,6 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
     <xsl:template match="text()" />
 
     <!-- these are the only elements allowed to produce text -->
-    <xsl:template match="para/text()|bold/text()|emphasis/text()|type/text()"><xsl:copy/></xsl:template>
+    <xsl:template match="para/text()|bold/text()|emphasis/text()|type/text()|title/text()"><xsl:copy/></xsl:template>
 
 </xsl:stylesheet>
