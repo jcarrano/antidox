@@ -34,7 +34,7 @@ are always string. To work around this issue, antidox allows encoding lists for
 these attributes by using "|" as a separator.
 
 Additionally, the strings ``true`` and ``false`` are converted to Python's
-**bool()**.
+**bool()** and digits are parsed to integers.
 
 .. _xml-additional:
 
