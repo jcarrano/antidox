@@ -193,6 +193,9 @@ def string_list(argument):
     return argument.split() if argument is not None else []
 
 
+_STR2BOOL = {"false": False, "true": True}
+
+
 class DoxyExtractor(Directive):
     """
     Auto-document any doxygen entity:
@@ -251,6 +254,14 @@ class DoxyExtractor(Directive):
         """Get the DoxyDB object."""
         return self.env.antidox_db
 
+    @staticmethod
+    def _attr_to_obj(attr_string):
+        """Try to convert a string to a python object"""
+        if attr_string.isdigit():
+            return int(attr_string)
+        else:
+            return _STR2BOOL.get(attr_string, attr_string)
+
     def _etree_to_sphinx(self, etree):
         """Convert an element tree to sphinx nodes.
 
@@ -271,8 +282,6 @@ class DoxyExtractor(Directive):
 
         special = {}
 
-        str2bool = {"false": False, "true": True}
-
         if etree.getroot() is None:
             logger.warn("Template produced no elements for %s",
                         self.arguments[0])
@@ -288,7 +297,7 @@ class DoxyExtractor(Directive):
                 list_attributes = getattr(nclass, "list_attributes", ())
                 filtered_attrs = {k: (v.split("|")
                                       if k in list_attributes
-                                      else str2bool.get(v, v))
+                                      else self._attr_to_obj(v))
                                   for (k, v) in elem.attrib.items()}
 
                 node = nclass(arg, **filtered_attrs)

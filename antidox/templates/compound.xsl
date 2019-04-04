@@ -106,7 +106,7 @@
         <paragraph><xsl:apply-templates/></paragraph>
     </xsl:template>
 -->
-    <!-- avoid leaving text elements floating around outside a paragraph.
+    <!--
          The XSD does not specify this, but from what I've seen if a <para>
          starts with text (or ref) it should be OK to enclose it in <paragraph>
     <xsl:template match="detaileddescription/para[child::text()[normalize-space(text()) != '']]">
@@ -124,8 +124,9 @@
         <subtitle><xsl:apply-templates select="briefdescription"/></subtitle>
         <!-- Catch all that is outside a heading -->
         <xsl:if test="not($hidedoc)">
-        <xsl:apply-templates select="detaileddescription/para[not(text()[normalize-space()])]/child::*[not(preceding::heading or self::heading)]|
-                                     detaileddescription/para[text()[normalize-space()] and not(preceding::heading or self::heading)]"/>
+        <!-- See below for an explanation of why we dissolve paragraphs with headings -->
+        <xsl:apply-templates select="detaileddescription/para[descendant::heading]/child::*[not(preceding::heading or self::heading)]|
+                                     detaileddescription/para[not(preceding::heading or descendant::heading)]"/>
         <xsl:apply-templates select="detaileddescription/para/heading[@level=1]"/>
         </xsl:if>
         </section>
@@ -157,9 +158,11 @@
     https://stackoverflow.com/questions/2165566/xslt-select-following-sibling-until-reaching-a-specified-tag
     This one is a bit more complex because headers can be nested.
     There are three types if content included by this <apply-template/> below:
-    1. Include simple paragraphs that contain only text, but only if they are immediately preceded by this section heading
-    1.1. Like 1, but for paragraphs without text, dissolve them (include children directly). This has to be done
-         here because a section can be broken in the middle of a <para> (doxy-weirdness).
+
+    1. Paragraphs that don't contain headers are included directly.
+    1.1. Sections can be broken in the middle of a <para> (doxy-weirdness), so
+         paragraphs containing any type of header are dissolved. Here we are hoping
+         that if it contains a header, then it should be safe to dissolve it.
     2. Include all headings exactly one level below this one (and preceded by this one)
 
     The important thing is that in (1) and (1.1) the test is done against heading of all
@@ -175,8 +178,8 @@
             <!-- Small workaround for trailing whitespace in titles -->
             <title><xsl:value-of select="normalize-space(.)"/></title>
             <xsl:apply-templates
-select="parent::*/following-sibling::para[(ref or text()[normalize-space()]) and generate-id(preceding::heading[1])=$heading]|
-parent::*/following-sibling::para[not(ref or text()[normalize-space()])]/*[not(self::heading) and generate-id(preceding::heading[1])=$heading]|
+select="parent::*/following-sibling::para[not(descendant::heading) and generate-id(preceding::heading[1])=$heading]|
+parent::*/following-sibling::para[descendant::heading]/*[not(self::heading) and generate-id(preceding::heading[1])=$heading]|
 parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id(preceding::heading[$level=number(@level)][1])=$heading]"/>
         </section>
         </xsl:if>
@@ -220,6 +223,26 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
 
     <xsl:template match="listitem">
         <list_item><xsl:apply-templates/></list_item>
+    </xsl:template>
+
+    <!-- This is probably incomplete -->
+    <xsl:template match="table">
+        <table>
+            <tgroup>
+            <xsl:attribute name="cols"><xsl:value-of select="@cols"/></xsl:attribute>
+                <xsl:apply-templates mode="colspec" select="row/entry[@thead='yes']"/>
+                <thead><xsl:apply-templates select="row[entry[@thead='yes']]"/></thead>
+                <tbody><xsl:apply-templates select="row[entry[@thead='no']]"/></tbody>
+            </tgroup>
+        </table>
+    </xsl:template>
+
+    <xsl:template match="*" mode="colspec">
+        <colspec colwidth="1"/>
+    </xsl:template>
+
+    <xsl:template match="row|entry">
+        <xsl:copy><xsl:apply-templates/></xsl:copy>
     </xsl:template>
 
     <xsl:template match="bold"><strong><xsl:apply-templates/></strong></xsl:template>
