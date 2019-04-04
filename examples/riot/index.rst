@@ -12,8 +12,14 @@ This is the unofficial documentation for `riot`_.
    compound_example2
    struct_example
    union_example
-   file_example
    file_example2
+   file_example
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Indices:
+
+   generated/group-index
    generated/file-index
 
 Indices and tables

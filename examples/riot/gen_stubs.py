@@ -19,8 +19,11 @@ COMPOUND_TEMPLATE = """
    {0.kind.name}[{0.name}]
 .. doxy:c:: !{0.refid}
    :children:
+   {1}
 
 """
+
+OPTIONS = {doxy.Kind.FILE: ":noindex:", doxy.Kind.GROUP: ""}
 
 INDEX_HEAD = """
 Index of {}s
@@ -57,7 +60,7 @@ def gen_stubs(doxy_db, kind_dir, kind):
             continue
 
         outfile = _rst_at(kind_dir, result.refid)
-        outfile.write_text(COMPOUND_TEMPLATE.format(result))
+        outfile.write_text(COMPOUND_TEMPLATE.format(result, OPTIONS[kind]))
 
         yield result
 
