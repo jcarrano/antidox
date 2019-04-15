@@ -109,11 +109,6 @@ XPath extension functions
   Generate a :ref:`target string <entity_references>` from a refid. This
   function maps to  :py:meth:`antidox.doxy.DoxyDB.refid_to_target`.
 
-  .. todo::
-
-    antidox-indexnode_ should recognize targets in "name" attributes and set
-    the "initial" letter correctly for the index.
-
 
 .. xpath-func:: antidox:lower-case(node_or_text)
 

@@ -220,7 +220,7 @@ Events
   and underscore:
 
   .. literalinclude:: ../../examples/riot/conf.py
-   :lines: 166-181,193-195
+   :lines: 169-184,218-220
 
 
 .. event:: antidox-db-loaded (app, db)

@@ -14,13 +14,18 @@ STUBGEN       ?= python $(STUBSCRIPT)
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
-.PHONY: help html xml sphinx-clean doxy-clean gen-clean clean view
+.PHONY: help html xml sphinx-clean doxy-clean gen-clean clean view sphinx-prereq
 
-INDICES ?= generated/file-index.rst generated/group-index.rst
+INDICES ?= generated/file-index.rst generated/group-index.rst generated/page-index.rst
+
+SPHINX_PREREQ = RIOT/doc/doxygen/xml $(INDICES)
 
 # Catch-all target: route all unknown targets to Sphinx using the new
 # "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
-html xml pickle: RIOT/doc/doxygen/xml $(INDICES)
+
+sphinx-prereq: $(SPHINX_PREREQ)
+
+html xml pickle: $(SPHINX_PREREQ)
 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 generated/%-index.rst: RIOT/doc/doxygen/xml $(STUBSCRIPT)
@@ -31,7 +36,7 @@ RIOT/doc/doxygen/xml: RIOT/doc/doxygen/Makefile
 	touch $@
 
 # The file "doxy-xml" will contain the location of the xml directory
-: RIOT/doc/doxygen/xml
+doxy-xml: RIOT/doc/doxygen/xml
 	$(file >$@,$^)
 
 sphinx-clean:

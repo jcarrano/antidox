@@ -116,7 +116,7 @@
     <!--Small workaround for groups without @brief -->
     <xsl:template match="/compounddef"/>
 
-    <xsl:template match="/compounddef[briefdescription//text() and (@kind = 'group' or @kind = 'file')]">
+    <xsl:template match="/compounddef[briefdescription//text() and (@kind = 'group' or @kind = 'file' or @kind = 'page')]">
         <section>
         <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
         <xsl:attribute name="names"><xsl:value-of select="@id"/>|<xsl:value-of select="compoundname"/>[<xsl:value-of select="@kind"/>]</xsl:attribute>
@@ -127,7 +127,7 @@
         <!-- See below for an explanation of why we dissolve paragraphs with headings -->
         <xsl:apply-templates select="detaileddescription/para[descendant::heading]/child::*[not(preceding::heading or self::heading)]|
                                      detaileddescription/para[not(preceding::heading or descendant::heading)]"/>
-        <xsl:apply-templates select="detaileddescription/para/heading[@level=1]"/>
+        <xsl:apply-templates select="detaileddescription/para/heading[@level=1]|detaileddescription/sect1|detaileddescription/sect2"/>
         </xsl:if>
         </section>
     </xsl:template>
@@ -160,6 +160,14 @@
         </desc>
     </xsl:template>
 
+    <xsl:template match="detaileddescription/sect1|detaileddescription/sect2">
+        <section>
+        <xsl:attribute name="ids"><xsl:value-of select="@id"/></xsl:attribute>
+        <title><xsl:apply-templates select="title/text()"/></title>
+        <xsl:apply-templates/>
+        </section>
+    </xsl:template>
+
     <!-- doxygen does not encapsulate a header and its content in a container,
     instead it just intercalates both. See the following post to understand
     what we are doing here:
@@ -176,7 +184,7 @@
     The important thing is that in (1) and (1.1) the test is done against heading of all
     levels, while the comparison in (2) is only with headings at the current level.
     -->
-    <xsl:template match="detaileddescription/para/heading">
+    <xsl:template match="detaileddescription/para/heading|sect1/para/heading">
         <xsl:variable name="heading" select="generate-id(.)"/>
         <xsl:variable name="level" select="number(@level)"/>
         <!-- TODO: add section ID (how do we handle duplicates?) -->

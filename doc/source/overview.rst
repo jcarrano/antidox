@@ -20,11 +20,6 @@ Objectives
 * Reuse API docs made with Doxygen in a Sphinx project.
 * Provide a smooth transition between 100% automatic API docs (what Doxygen
   generates) and semi-manual documentation.
-
-  .. todo::
-
-    Add Autoindex-like functionality.
-
 * Have sensible defaults for automatic documentation generation while allowing
   customization.
 * Deal with big projects efficiently: the main tool in use now (Breathe)

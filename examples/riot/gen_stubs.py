@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Generate stubs for Doxygen Compounds.
 
 This is not part of the antidox module because there is no one-size-fits-all
@@ -23,7 +24,7 @@ COMPOUND_TEMPLATE = """
 
 """
 
-OPTIONS = {doxy.Kind.FILE: ":noindex:", doxy.Kind.GROUP: ""}
+OPTIONS = {doxy.Kind.FILE: ":noindex:"}
 
 INDEX_HEAD = """
 Index of {}s
@@ -53,14 +54,13 @@ def prepare_dir(out_dir, kind):
 
 def gen_stubs(doxy_db, kind_dir, kind):
     entities = doxy_db.find((kind,))
+    options = OPTIONS.get(kind, "")
 
     for result in entities:
         members, compounds = doxy_db.find_children(result.refid)
-        if not (members or compounds):
-            continue
 
         outfile = _rst_at(kind_dir, result.refid)
-        outfile.write_text(COMPOUND_TEMPLATE.format(result, OPTIONS[kind]))
+        outfile.write_text(COMPOUND_TEMPLATE.format(result, options))
 
         yield result
 
@@ -79,13 +79,11 @@ def main():
     parser = argparse.ArgumentParser(
                     description="Example antidox stub generator")
 
-    parser.add_argument('--groups', help="Generate stubs for groups.",
-                        dest='kinds', action='append_const',
-                        const=doxy.Kind.GROUP)
-
-    parser.add_argument('--files', help="Generate stubs for files.",
-                        dest='kinds', action='append_const',
-                        const=doxy.Kind.FILE)
+    for s in ('group', 'file', 'page'):
+        parser.add_argument('--{}s'.format(s),
+                            help="Generate stubs for {}s.".format(s),
+                            dest='kinds', action='append_const',
+                            const=doxy.Kind.from_attr(s))
 
     parser.add_argument('xml_dir', help="Doxygen xml dir.",
                         type=pathlib.Path)

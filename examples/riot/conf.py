@@ -14,8 +14,11 @@
 #
 import os
 import sys
+import pathlib
+
 sys.path.insert(0, os.path.abspath('../..'))
 
+this_dir = pathlib.Path(__file__).parent
 
 # -- Project information -----------------------------------------------------
 
@@ -190,6 +193,29 @@ def group_no_files(app, this, options, children):
             children.remove(el)
 
 
+# -- Hacks for Read the Docs ------------------------------------------
+#  This will only be used when we are inside RTD
+#  Taken from http://breathe.readthedocs.io/en/latest/readthedocs.html
+
+import subprocess
+
+read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
+
+def _run_cmd(cmd):
+    """Run an arbitrary command and check exit status"""
+    try:
+        retcode = subprocess.call(cmd, shell=True)
+        if retcode < 0:
+            sys.stderr.write("command terminated by signal %s" % (-retcode))
+    except OSError as e:
+        sys.stderr.write("command execution failed: %s" % e)
+
+def generate_doxygen(app, config):
+    """Run the doxygen make commands if we're on the ReadTheDocs server"""
+    if read_the_docs_build:
+        _run_cmd("make -C {} sphinx-prereq".format(pathlib.Path(this_dir, "..")))
+
 def setup(app):
     app.connect("antidox-include-children", struct_no_undescore)
     app.connect("antidox-include-children", group_no_files)
+    app.connect("config-inited", generate_doxygen)

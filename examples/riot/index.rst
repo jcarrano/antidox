@@ -6,14 +6,9 @@ This is the unofficial documentation for `riot`_.
 .. toctree::
    :maxdepth: 3
    :caption: Contents:
+   :glob:
 
-   group_example
-   core_msg
-   compound_example2
-   struct_example
-   union_example
-   file_example2
-   file_example
+   generated/page/*
 
 .. toctree::
    :maxdepth: 1
