@@ -160,7 +160,7 @@ texinfo_documents = [
 
 # -- Options for antidox -----------------------------------------------------
 
-antidox_doxy_xml_dir = "RIOT/doc/doxygen/xml"
+antidox_doxy_xml_dir = str(pathlib.Path(this_dir, "RIOT/doc/doxygen/xml"))
 #antidox_xml_stylesheet = "custom.xsl"
 
 # The following lines will show up in antidox's docs, so update the user guide
