@@ -1,9 +1,11 @@
 version: 2
 
 # avoid cloning the RIOT repo, too heavy
+#~ submodules:
+  #~ exclude:
+    #~ - examples/riot/RIOT
 submodules:
-  exclude:
-    - examples/riot/RIOT
+  include: all
 
 python:
   install:
