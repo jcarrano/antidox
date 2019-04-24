@@ -117,6 +117,8 @@
     <xsl:template match="/compounddef"/>
 
     <xsl:template match="/compounddef[briefdescription//text() and (@kind = 'group' or @kind = 'file' or @kind = 'page')]">
+    <!-- see https://stackoverflow.com/questions/1128745/how-can-i-use-xpath-to-find-the-minimum-value-of-an-attribute-in-a-set-of-elemen -->
+        <xsl:variable name="minlevel" select="detaileddescription/para/heading/@level[not(. > ../../../heading/@level)][1]"/>
         <section>
         <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
         <xsl:attribute name="names"><xsl:value-of select="@id"/>|<xsl:value-of select="compoundname"/>[<xsl:value-of select="@kind"/>]</xsl:attribute>
@@ -127,7 +129,7 @@
         <!-- See below for an explanation of why we dissolve paragraphs with headings -->
         <xsl:apply-templates select="detaileddescription/para[descendant::heading]/child::*[not(preceding::heading or self::heading)]|
                                      detaileddescription/para[not(preceding::heading or descendant::heading)]"/>
-        <xsl:apply-templates select="detaileddescription/para/heading[@level=1]|detaileddescription/sect1|detaileddescription/sect2"/>
+        <xsl:apply-templates select="detaileddescription/para/heading[@level=$minlevel]|detaileddescription/sect1|detaileddescription/sect2"/>
         </xsl:if>
         </section>
     </xsl:template>
@@ -161,12 +163,13 @@
     </xsl:template>
 
     <xsl:template match="detaileddescription/sect1|detaileddescription/sect2">
+        <xsl:variable name="minlevel" select="detaileddescription/para/heading/@level[not(. > ../../../heading/@level)][1]"/>
         <section>
         <xsl:attribute name="ids"><xsl:value-of select="@id"/></xsl:attribute>
         <title><xsl:apply-templates select="title/text()"/></title>
         <xsl:apply-templates select="para[not(preceding::heading or descendant::heading)]|
                                      para[descendant::heading]/child::*[not(preceding::heading or self::heading)]"/>
-        <xsl:apply-templates select="para/heading[@level=1]|sect1|sect2"/>
+        <xsl:apply-templates select="para/heading[@level=$minlevel]|sect1|sect2"/>
         </section>
     </xsl:template>
 
