@@ -164,7 +164,9 @@
         <section>
         <xsl:attribute name="ids"><xsl:value-of select="@id"/></xsl:attribute>
         <title><xsl:apply-templates select="title/text()"/></title>
-        <xsl:apply-templates/>
+        <xsl:apply-templates select="para[not(preceding::heading or descendant::heading)]|
+                                     para[descendant::heading]/child::*[not(preceding::heading or self::heading)]"/>
+        <xsl:apply-templates select="para/heading[@level=1]|sect1|sect2"/>
         </section>
     </xsl:template>
 
@@ -194,12 +196,18 @@
             <!-- Small workaround for trailing whitespace in titles -->
             <title><xsl:value-of select="normalize-space(.)"/></title>
             <xsl:apply-templates
-select="parent::*/following-sibling::para[not(descendant::heading) and generate-id(preceding::heading[1])=$heading]|
-parent::*/following-sibling::para[descendant::heading]/*[not(self::heading) and generate-id(preceding::heading[1])=$heading]|
-parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id(preceding::heading[$level=number(@level)][1])=$heading]"/>
+select="parent::*/following-sibling::para[not(descendant::heading) and generate-id(preceding::heading[1])=$heading]" />
+            <paragraph>
+            <xsl:apply-templates
+select="parent::*/following-sibling::para[descendant::heading]/*[not(self::heading) and generate-id(preceding::heading[1])=$heading]"/>
+            </paragraph>
+            <xsl:apply-templates
+select="parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id(preceding::heading[$level=number(@level)][1])=$heading]"/>
         </section>
         </xsl:if>
     </xsl:template>
+
+    <!-- Prevents losing lose text when applying rule 1.1 described above. -->
 
     <xsl:template match="type">
         <desc_type><xsl:apply-templates/></desc_type>
@@ -345,7 +353,7 @@ parent::*/following-sibling::*/heading[number(@level)=($level+1) and generate-id
         </field_list>
     </xsl:template>
 
-    <xsl:template match="detaileddescription">
+    <xsl:template match="memberdef/detaileddescription">
         <xsl:apply-templates/>
         <xsl:if test="descendant::simplesect[@kind='return']">
             <rubric><xsl:text>Return values</xsl:text></rubric>
