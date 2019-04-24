@@ -213,7 +213,7 @@ def _run_cmd(cmd):
 def generate_doxygen(app, config):
     """Run the doxygen make commands if we're on the ReadTheDocs server"""
     if read_the_docs_build:
-        _run_cmd("make -C {} sphinx-prereq".format(pathlib.Path(this_dir, "..")))
+        _run_cmd("make -C {} sphinx-prereq".format(this_dir))
 
 def setup(app):
     app.connect("antidox-include-children", struct_no_undescore)
