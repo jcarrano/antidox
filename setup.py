@@ -32,7 +32,7 @@ setup(name='antidox',
         'console_scripts': [
             'antidox-shell = antidox.shell:main',
         ],
-      }
+      },
       include_package_data=True,
       zip_safe=True
 )
