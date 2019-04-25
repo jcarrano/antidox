@@ -1,12 +1,8 @@
 *.pyc
 *.pyo
 __pycache__
-build/
-_build
-example_project/xml
-dist/
+/dist
 *.egg-info/
 doxy-xml
-examples/tinycbor/xml
 .mypy_cache
-generated
+/doc/build/
