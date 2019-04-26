@@ -116,7 +116,7 @@
     <!--Small workaround for groups without @brief -->
     <xsl:template match="/compounddef"/>
 
-    <xsl:template match="/compounddef[briefdescription//text() and (@kind = 'group' or @kind = 'file' or @kind = 'page')]">
+    <xsl:template match="/compounddef[(briefdescription//text() and (@kind = 'group' or @kind = 'file')) or @kind = 'page']">
     <!-- see https://stackoverflow.com/questions/1128745/how-can-i-use-xpath-to-find-the-minimum-value-of-an-attribute-in-a-set-of-elemen -->
         <xsl:variable name="minlevel" select="detaileddescription/para/heading/@level[not(. > ../../../heading/@level)][1]"/>
         <section>
