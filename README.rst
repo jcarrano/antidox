@@ -9,16 +9,6 @@ An antidote to doxy-madness
 |docs| |pypi|
 
 
-Note: currently under development
-=================================
-
-This software is currently under development and in alpha phase. This means all
-work is being done on `master`, which may break, and APIs may change, all while
-keeping version 0.1.1.
-
-As soon as it is deemed stable enough, the version will be bumped to 0.1.2 and
-this notice will be removed.
-
 Summary
 =======
 
@@ -33,6 +23,15 @@ documentable entities is done by a SQL database (sqlite3_.)
 
 Here is an `example project <cbor_example_>`_ showing showing this extension in
 action.
+
+Note: Beta
+==========
+
+Though usable, this extension is still under development. Backwards
+compatibility will be kept for all releases with the same major/minor version.
+
+Be aware, however, that after updating this extension you may need to do a clean
+build of your docs to see the results.
 
 Objectives
 ==========
