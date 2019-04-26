@@ -93,15 +93,28 @@ On huge projects, the fist time you run ``sphinx-build`` it may take a some time
 to parse all the XML files. Subsequent runs should go faster as long as the
 XML files are not touched.
 
-Note: currently under development
----------------------------------
+Debugging
+---------
 
-This software is currently under development and in alpha phase. This means all
-work is being done on `master`, which may break, and APIs may change, all while
-keeping version 0.1.1.
+The :py:mod:`antidox.shell` module contains an interactive shell that can be
+used to inspect Doxygen databases and to test the XML template.
 
-As soon as it is deemed stable enough, the version will be bumped to 0.1.2 and
-this notice will be removed.
+The shell is installed as a console script named ``antidox-shell``.
+
+Notes on Stability
+------------------
+
+Though usable, this extension is still under development. Backwards
+compatibility will be kept for all releases with the same major/minor version.
+
+Be aware, however, that after updating this extension you may need to do a clean
+build of your docs to see the results, in particular if the newer version has
+an updated default stylesheet.
+
+The debug shell is intended as a low-level debugging aid so do not rely on its
+interface being consistent.
+
+The schema for the SQLite database will only happen on major version changes.
 
 .. todolist::
 

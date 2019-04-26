@@ -2,6 +2,7 @@
 *.pyo
 __pycache__
 /dist
+/build
 *.egg-info/
 doxy-xml
 .mypy_cache
