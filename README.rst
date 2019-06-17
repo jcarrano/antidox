@@ -6,7 +6,7 @@ Antidox: Use Doxygen sanely from within Sphinx
 An antidote to doxy-madness
 ---------------------------
 
-|docs|
+|docs| |pypi|
 
 
 Note: currently under development
@@ -49,6 +49,11 @@ Objectives
     :alt: Documentation Status
     :scale: 100%
     :target: https://antidox.readthedocs.io/en/latest/?badge=latest
+
+.. |pypi| image:: https://img.shields.io/pypi/v/antidox.svg?style=for-the-badge
+    :alt: PyPI
+    :scale: 200%
+    :target: https://pypi.org/project/antidox/
 
 .. _Sphinx: https://www.sphinx-doc.org
 .. _Doxygen: http://www.doxygen.nl/
