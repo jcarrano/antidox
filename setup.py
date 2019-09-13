@@ -6,7 +6,7 @@ def readme():
         return f.read()
 
 setup(name='antidox',
-      version='0.1.2',
+      version='0.1.3',
       description='Sphinx extension to extract and insert Doxygen documentation.',
       long_description=readme(),
       long_description_content_type='text/x-rst',
@@ -20,13 +20,13 @@ setup(name='antidox',
         'Topic :: Software Development :: Documentation'
       ],
       keywords='sphinx doxygen',
-      url='https://github.com/riot-appstore/antidox',
+      url='https://github.com/jcarrano/antidox',
       project_urls={
         'Documentation': 'https://antidox.readthedocs.io/en/latest/index.html',
-        'Tracker': 'https://github.com/riot-appstore/antidox/issues',
+        'Tracker': 'https://github.com/jcarrano/antidox/issues',
       },
-      author='Juan I Carrano <j.carrano@fu-berlin.de>',
-      author_email='j.carrano@fu-berlin.de',
+      author='Juan I Carrano <juan@carrano.com.ar>',
+      author_email='juan@carrano.com.ar',
       license='BSD',
       packages=['antidox'],
       install_requires=[
