@@ -24,6 +24,44 @@ documentable entities is done by a SQL database (sqlite3_.)
 Here is an `example project <cbor_example_>`_ showing showing this extension in
 action.
 
+Example usage
+=============
+
+Generate the documentation for an entire header, and include all entities defined
+in that header::
+
+  .. doxy:c:: lua_run.h::*
+      :children:
+      
+The syntax *<path>*::*<identifier>* can be used to disambiguate between entities
+with the same name in different files.
+
+To document a Doxygen group::
+
+  .. doxy:c:: [CborPretty]
+      :children:
+
+You can manually specify which children should be documented::
+
+  .. doxy:c:: be_uint16_t
+      :children: u16
+
+Cross references are provided by a custom role, e.g.::
+
+  :doxy:r:`be_uint16_t::u16`
+
+The complete syntax is decribed in the docs_.
+
+Stub generation
+---------------
+
+The gen_stubs.py_ script shows how stub files can be automatically generated.
+You can adapt this script to your own project.
+
+Generating API docs this way is fast and convenient, but may be suboptimal,
+since the spirit of this extension (and of Sphinx) is to generate narrative
+documentation and not merely an API reference.
+
 Note: Beta
 ==========
 
@@ -60,3 +98,5 @@ Objectives
 .. _lxml: https://lxml.de/
 .. _sqlite3: https://docs.python.org/3/library/sqlite3.html
 .. _cbor_example: https://antidox-example.readthedocs.io/en/latest/
+.. _docs: https://antidox.readthedocs.io/en/latest/guide.html#directives-roles-and-domains
+.. _gen_stubs.py: examples/riot/gen_stubs.py
