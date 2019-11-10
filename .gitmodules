@@ -1,8 +1,3 @@
-[submodule "examples/riot/RIOT"]
-	path = examples/riot/RIOT
-	url = https://github.com/jcarrano/RIOT.git
-	branch = sphinx-docs2
-	shallow = true
 [submodule "examples/tinycbor/tinycbor"]
 	path = examples/tinycbor/tinycbor
 	url = https://github.com/intel/tinycbor.git
