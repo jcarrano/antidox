@@ -21,15 +21,20 @@
                 <xsl:attribute name="ids">c.<xsl:value-of select="@id"/></xsl:attribute>
                 <xsl:attribute name="names"><xsl:value-of select="antidox:refid_to_target(@id)"/></xsl:attribute>
                 <xsl:apply-templates select="type|name"/>
-                <xsl:if test="argsstring/text()|param">
-                <desc_parameterlist>
-                  <xsl:for-each select="param">
-                    <desc_parameter noemph="true">
-                        <xsl:apply-templates/>
-                    </desc_parameter>
-                  </xsl:for-each>
-                </desc_parameterlist>
-                </xsl:if>
+                <xsl:choose>
+                    <xsl:when test="param">
+                     <desc_parameterlist>
+                      <xsl:for-each select="param">
+                        <desc_parameter noemph="true">
+                            <xsl:apply-templates/>
+                        </desc_parameter>
+                      </xsl:for-each>
+                     </desc_parameterlist>
+                    </xsl:when>
+                    <xsl:when test="argsstring/text()">
+                        <xsl:value-of select="antidox:parse_argstr(argsstring/text())"/>
+                    </xsl:when>
+                </xsl:choose>
                 <xsl:call-template name="keyed-index"/>
             </desc_signature>
             <xsl:if test="not($hidedoc)">

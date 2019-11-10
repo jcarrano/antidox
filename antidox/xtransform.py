@@ -102,6 +102,11 @@ def _textmeth(f):
     return _f
 
 
+# From https://stackoverflow.com/a/33527584/5220128
+# Split commas.
+_SPLIT_COMMA = re.compile(r',(?!(?:[^(]*\([^)]*\))*[^()]*\))')
+
+
 class _XPathExtensions:
     def __init__(self, locale_fn=None, doxy_db=None):
         self._locale_fn = locale_fn or (lambda x: x)
@@ -120,6 +125,24 @@ class _XPathExtensions:
     @_textmeth
     def refid_to_target(self, _, text):
         return "" if not self._doxy_db else str(self._doxy_db.refid_to_target(text))
+
+    @_textmeth
+    def parse_argstr(self, _, text):
+        """Convert an argument string into desc_parameter nodes. This is used
+        to work around a bug in Doxygen where it will not parse arguments to
+        function pointers."""
+        nodes = []
+        for arg in _SPLIT_COMMA.split(text):
+            atype, _s, aname = arg.rpartition(' ')
+            desc_p = ET.Element('desc_parameter')
+            desc_t = ET.SubElement(desc_p, 'desc_type')
+            desc_t.text = atype
+            if aname:
+                desc_t.tail = " "
+                ET.SubElement(desc_p, 'desc_name').text = aname
+            nodes.append(desc_p)
+
+        return nodes
 
 
 def get_stylesheet(stylesheet_filename=None, locale_fn=None, doxy_db=None):

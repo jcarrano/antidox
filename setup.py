@@ -6,7 +6,7 @@ def readme():
         return f.read()
 
 setup(name='antidox',
-      version='0.1.3',
+      version='0.1.4',
       description='Sphinx extension to extract and insert Doxygen documentation.',
       long_description=readme(),
       long_description_content_type='text/x-rst',
