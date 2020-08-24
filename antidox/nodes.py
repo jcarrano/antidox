@@ -11,6 +11,7 @@ import abc
 from docutils import nodes as _nodes
 from docutils.parsers.rst import directives, DirectiveError
 from sphinx import addnodes
+from sphinx.domains.c import Symbol, ASTDeclaration, ASTIdentifier
 
 __author__ = "Juan I Carrano"
 __copyright__ = "Copyright 2018, Freie Universität Berlin"
@@ -102,6 +103,10 @@ class UserContent(DeferredPlaceholder):
     _name = "usercontent"
 
 
+class NoDecl:
+    function_params = None
+
+
 class Index(PlaceHolder, _nodes.Inline, _nodes.TextElement):
     """Add a cross-referenceable index entry to the parent of this element.
     """
@@ -138,13 +143,18 @@ class Index(PlaceHolder, _nodes.Inline, _nodes.TextElement):
         env = state.document.settings.env
 
         for domain, _, sref in (s.partition(".") for s in self.parent['ids']):
-            inv = env.domaindata[domain]['objects']
+            dom = env.get_domain(domain)
+            inv = dom.objects
+
             if sref in inv:
                 state_machine.reporter.warning(
                     'duplicate %s object description of %s, ' % (domain, sref) +
                     'other instance in ' + env.doc2path(inv[sref][0]),
                     line=lineno)  # FIXME
-            inv[sref] = (env.docname, self.guess_objtype())
+            typ = self.guess_objtype()
+            inv[sref] = (env.docname, sref, typ)
+
+            Symbol(dom.data['root_symbol'], ASTIdentifier(sref), ASTDeclaration(typ, typ, NoDecl()), env.docname)
 
         return super().replace_placeholder(lineno, state, state_machine)
 
