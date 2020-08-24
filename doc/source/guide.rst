@@ -219,8 +219,26 @@ Events
   For example, you can use this event to exclude struct members that start with
   and underscore:
 
-  .. literalinclude:: ../../examples/riot/conf.py
-   :lines: 169-184,218-220
+  .. code-block:: python
+
+    import antidox.doxy
+    import antidox.directives
+    import re
+
+    _SINGLE_UNDERSCORE = re.compile("^_[^_].*")
+
+    def struct_no_undescore(app, this, options, children):
+        """Handle the antidox-include-children event and cause it to skip struct
+        members that start with a single underscore"""
+        db = app.env.antidox_db
+
+        if db.get(this)['kind'] == antidox.doxy.Kind.STRUCT:
+            for el in [(k, v) for k, v in children
+                        if _SINGLE_UNDERSCORE.fullmatch(db.get(k)['name'])]:
+                children.remove(el)
+
+    def setup(app):
+        app.connect("antidox-include-children", struct_no_undescore)
 
 
 .. event:: antidox-db-loaded (app, db)
