@@ -229,21 +229,6 @@ class DoxyExtractor(Directive):
     _flag_parameters = [opt for opt, typ in option_spec.items()
                         if typ == directives.flag]
 
-    def add_target_and_index(self, name, sig, signode):
-        # type: (Any, unicode, addnodes.desc_signature) -> None
-        """
-        Add cross-reference IDs and entries to self.indexnode, if applicable.
-
-        Parameters
-        ----------
-
-        name: refid for the object.
-        sig: Signature. It is parsed as a doxy.Target string.
-        """
-        # FIXME: what is this supposed to do?
-
-        return  # do nothing by default
-
     @property
     def env(self):
         """Shortcut to get this document's environment."""
