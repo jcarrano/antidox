@@ -27,3 +27,11 @@ struct s2 {
 	 */
 	int (*c)(float a, float b);
 };
+
+/**
+ * Struct with flex member.
+ */
+struct fm {
+	unsigned l; /**< Length of d */
+	char d[];   /**< data. */
+};

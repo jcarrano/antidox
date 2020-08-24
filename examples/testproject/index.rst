@@ -13,15 +13,25 @@ Welcome to Test Project's documentation!
 
 .. doxy:c:: s1
    :children:
+   :no-children: b
 
 .. doxy:c:: s2
    :children:
 
 
+.. doxy:c:: fm
+   :children:
+   :no-children: d
+
 .. doxy:c:: functions.h::c
 
 .. doxy:c:: functions.h::k
 
+.. c:struct:: X
+
+   Structure
+
+Cross ref to :c:struct:`X`.
 
 Indices and tables
 ==================
