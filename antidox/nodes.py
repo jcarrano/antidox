@@ -104,6 +104,12 @@ class UserContent(DeferredPlaceholder):
 
 
 class NoDecl:
+    def __init__(self, sref):
+        self._sref = sref
+
+    def get_id(self, *args):
+        return self._sref
+
     function_params = None
 
 
@@ -144,17 +150,17 @@ class Index(PlaceHolder, _nodes.Inline, _nodes.TextElement):
 
         for domain, _, sref in (s.partition(".") for s in self.parent['ids']):
             dom = env.get_domain(domain)
-            inv = dom.objects
+            inv = {n[0]: n[3] for n in dom.get_objects()}
 
             if sref in inv:
                 state_machine.reporter.warning(
                     'duplicate %s object description of %s, ' % (domain, sref) +
-                    'other instance in ' + env.doc2path(inv[sref][0]),
+                    'other instance in ' + env.doc2path(inv[sref]),
                     line=lineno)  # FIXME
             typ = self.guess_objtype()
-            inv[sref] = (env.docname, sref, typ)
+            inv[sref] = env.docname
 
-            Symbol(dom.data['root_symbol'], ASTIdentifier(sref), ASTDeclaration(typ, typ, NoDecl()), env.docname)
+            Symbol(dom.data['root_symbol'], ASTIdentifier(sref), ASTDeclaration(typ, typ, NoDecl(sref)), env.docname, lineno)
 
         return super().replace_placeholder(lineno, state, state_machine)
 

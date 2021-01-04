@@ -6,7 +6,7 @@ def readme():
         return f.read()
 
 setup(name='antidox',
-      version='0.2.0',
+      version='0.2.1',
       description='Sphinx extension to extract and insert Doxygen documentation.',
       long_description=readme(),
       long_description_content_type='text/x-rst',
@@ -30,7 +30,7 @@ setup(name='antidox',
       license='BSD',
       packages=['antidox'],
       install_requires=[
-        'sphinx>=3.0,<4.0',
+        'sphinx>=3.3.1,<3.5',
         'lxml'
       ],
       entry_points={
